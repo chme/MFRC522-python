@@ -9,11 +9,13 @@ from mfrc522 import MFRC522
 logging.basicConfig(level=logging.INFO)
 run = True
 
+
 def end(signal, frame):
     global run
     print('Ctrl+C captured, ending example program.')
     run = False
     sys.exit()
+
 
 signal.signal(signal.SIGINT, end)
 
@@ -23,7 +25,8 @@ def setup(rfid):
     print('*****************************')
     print('MFRC522 Digital self test')
     print('*****************************')
-    rfid.pcd_dump_version_to_serial()           # Show details of PCD - MFRC522 Card Reader details
+    # Show details of PCD - MFRC522 Card Reader details
+    rfid.pcd_dump_version_to_serial()
     print('-----------------------------')
     print('Only known versions supported')
     print('-----------------------------')
@@ -39,4 +42,3 @@ try:
 
 finally:
     rfid.pcd_cleanup()
-

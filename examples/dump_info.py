@@ -10,22 +10,24 @@ from mfrc522 import MFRC522
 logging.basicConfig(level=logging.INFO)
 run = True
 
+
 def end(signal, frame):
     global run
     print('Ctrl+C captured, ending example program.')
     run = False
     sys.exit()
 
+
 signal.signal(signal.SIGINT, end)
-
-
 
 
 def setup(rfid):
     rfid.pcd_init()                     # Init MFRC522
-    rfid.pcd_dump_version_to_serial()   # Show details of PCD - MFRC522 Card Reader details
+    # Show details of PCD - MFRC522 Card Reader details
+    rfid.pcd_dump_version_to_serial()
     print('Scan PICC to see UID, SAK, type, and data blocks...')
     print('(Press CTRL+C to quit)')
+
 
 def loop(rfid):
     # Look for new cards
@@ -43,6 +45,7 @@ def loop(rfid):
     rfid.picc_dump_to_serial(uid)
     print()
 
+
 rfid = MFRC522()
 try:
     setup(rfid)
@@ -53,4 +56,3 @@ try:
 
 finally:
     rfid.pcd_cleanup()
-

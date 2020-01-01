@@ -11,11 +11,13 @@ import RPi.GPIO as GPIO
 logging.basicConfig(level=logging.INFO)
 run = True
 
+
 def end(signal, frame):
     global run
     print('Ctrl+C captured, ending example program.')
     run = False
     sys.exit()
+
 
 signal.signal(signal.SIGINT, end)
 
@@ -30,13 +32,17 @@ def read_card(pin):
     global b_new_int
     b_new_int = True
 
+
 def activate_rec(rfid):
     '''
     The function sending to the MFRC522 the needed commands to activate the reception
     '''
-    rfid.pcd_write_register(PCD_Register.FIFODataReg, PICC_Command.PICC_CMD_REQA.value)
-    rfid.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_Transceive.value)
+    rfid.pcd_write_register(PCD_Register.FIFODataReg,
+                            PICC_Command.PICC_CMD_REQA.value)
+    rfid.pcd_write_register(PCD_Register.CommandReg,
+                            PCD_Command.PCD_Transceive.value)
     rfid.pcd_write_register(PCD_Register.BitFramingReg, 0x87)
+
 
 def clear_int(rfid):
     '''
@@ -44,21 +50,24 @@ def clear_int(rfid):
     '''
     rfid.pcd_write_register(PCD_Register.ComIrqReg, 0x7F)
 
+
 def setup(rfid):
     rfid.pcd_init()                     # Init MFRC522
-    rfid.pcd_dump_version_to_serial()   # Show details of PCD - MFRC522 Card Reader details
+    # Show details of PCD - MFRC522 Card Reader details
+    rfid.pcd_dump_version_to_serial()
     print('Scan PICC to see UID...')
     print('(Press CTRL+C to quit)')
 
     # Allow the ... irq to be propagated to the IRQ pin
     # For test purposes propagate the IdleIrq and loAlert
-    reg_val = 0xA0 # rx irq
+    reg_val = 0xA0  # rx irq
     rfid.pcd_write_register(PCD_Register.ComIEnReg, reg_val)
-    
+
     # Activate the interrupt
     GPIO.add_event_detect(rfid.pin_irq, GPIO.FALLING, callback=read_card)
-    
+
     print('End setup')
+
 
 def loop(rfid):
     global b_new_int
@@ -74,10 +83,11 @@ def loop(rfid):
         print()
         clear_int(rfid)
         b_new_int = False
-    
+
     # The receiving block needs regular retriggering (tell the tag it should transmit??)
     # (mfrc522.PCD_WriteRegister(mfrc522.FIFODataReg,mfrc522.PICC_CMD_REQA);)
     activate_rec(rfid)
+
 
 rfid = MFRC522()
 try:
@@ -89,5 +99,3 @@ try:
 
 finally:
     rfid.pcd_cleanup()
-
-

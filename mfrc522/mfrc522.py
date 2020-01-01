@@ -128,7 +128,6 @@ from .utils import format_hex
 from .utils import FormatString as _F
 
 
-
 logger_debug = logging.getLogger('mfrc522.log')
 logger_trace = logging.getLogger('mfrc522.trace')
 logger_spi = logging.getLogger('mfrc522.spi')
@@ -144,7 +143,7 @@ class PCD_Register(Enum):
     MFRC522 registers. Described in chapter 9 of the datasheet.
     When using SPI all addresses are shifted one bit left in the "SPI address byte" (section 8.1.2.3)
     '''
-    
+
     # Page 0: Command and status
     #                     0x00         # reserved for future use
     CommandReg          = 0x01 << 1    # starts and stops command execution
@@ -162,7 +161,7 @@ class PCD_Register(Enum):
     BitFramingReg       = 0x0D << 1    # adjustments for bit-oriented frames
     CollReg             = 0x0E << 1    # bit position of the first bit-collision detected on the RF interface
     #                     0x0F         # reserved for future use
-    
+
     # Page 1: Command
     #                     0x10         # reserved for future use
     ModeReg             = 0x11 << 1    # defines general modes for transmitting and receiving 
@@ -198,7 +197,7 @@ class PCD_Register(Enum):
     TReloadRegL         = 0x2D << 1
     TCounterValueRegH   = 0x2E << 1    # shows the 16-bit timer value
     TCounterValueRegL   = 0x2F << 1
-    
+
     # Page 3: Test Registers
     #                     0x30         # reserved for future use
     TestSel1Reg         = 0x31 << 1    # general test signal configuration
@@ -221,7 +220,6 @@ class PCD_Command(Enum):
     '''
     MFRC522 commands. Described in chapter 10 of the datasheet.
     '''
-    
     PCD_Idle                = 0x00     # no action, cancels current command execution
     PCD_Mem                 = 0x01     # stores 25 bytes into the internal buffer
     PCD_GenerateRandomID    = 0x02     # generates a 10-byte random ID number
@@ -238,7 +236,6 @@ class PCD_RxGain(Enum):
     MFRC522 RxGain[2:0] masks, defines the receiver's signal voltage gain factor (on the PCD).
     Described in 9.3.3.6 / table 98 of the datasheet at http://www.nxp.com/documents/data_sheet/MFRC522.pdf
     '''
-    
     RxGain_18dB             = 0x00 << 4    # 000b - 18 dB, minimum
     RxGain_23dB             = 0x01 << 4    # 001b - 23 dB
     RxGain_18dB_2           = 0x02 << 4    # 010b - 18 dB, it seems 010b is a duplicate for 000b
@@ -255,7 +252,6 @@ class PICC_Command(Enum):
     '''
     Commands sent to the PICC.
     '''
-    
     # The commands used by the PCD to manage communication with several PICCs (ISO 14443-3, Type A, section 6.4)
     PICC_CMD_REQA           = 0x26         # REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection. 7 bit frame.
     PICC_CMD_WUPA           = 0x52         # Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for anticollision or selection. 7 bit frame.
@@ -284,7 +280,6 @@ class MIFARE_Misc(Enum):
     '''
     MIFARE constants that does not fit anywhere else
     '''
-    
     MF_ACK                  = 0xA          # The MIFARE Classic uses a 4 bit ACK/NAK. Any other value than 0xA is NAK.
     MF_KEY_SIZE             = 6            # A Mifare Crypto1 key is 6 bytes.
 
@@ -292,7 +287,6 @@ class PICC_Type(Enum):
     '''
     PICC types we can detect. Remember to update PICC_GetTypeName() if you add more.
     '''
-    
     PICC_TYPE_UNKNOWN        = 0
     PICC_TYPE_ISO_14443_4    = 1    # PICC compliant with ISO/IEC 14443-4 
     PICC_TYPE_ISO_18092      = 2    # PICC compliant with ISO/IEC 18092 (NFC)
@@ -304,7 +298,7 @@ class PICC_Type(Enum):
     PICC_TYPE_MIFARE_DESFIRE = 8    # MIFARE DESFire
     PICC_TYPE_TNP3XXX        = 9    # Only mentioned in NXP AN 10833 MIFARE Type Identification Procedure
     PICC_TYPE_NOT_COMPLETE   = 10   # SAK indicates UID is not complete.
-    
+
     def get_name(self):
         '''
         Returns the PICC type name.
@@ -334,15 +328,15 @@ class PICC_Type(Enum):
         elif self == PICC_Type.PICC_TYPE_UNKNOWN:
             return 'Unknown type'
         return 'Unknown type'
-    
+
     def is_mifare_classic(self):
         return (self == PICC_Type.PICC_TYPE_MIFARE_MINI
                 or self == PICC_Type.PICC_TYPE_MIFARE_1K
                 or self == PICC_Type.PICC_TYPE_MIFARE_4K)
-    
-    def is_mifare_ultrlight(self): 
+
+    def is_mifare_ultrlight(self):
         return self == PICC_Type.PICC_TYPE_MIFARE_UL
-    
+
     def get_sector_count(self):
         if self == PICC_Type.PICC_TYPE_MIFARE_MINI:
             # Has 5 sectors * 4 blocks/sector * 16 bytes/block = 320 bytes.
@@ -351,12 +345,13 @@ class PICC_Type(Enum):
             # Has 16 sectors * 4 blocks/sector * 16 bytes/block = 1024 bytes.
             no_of_sectors = 16
         elif self == PICC_Type.PICC_TYPE_MIFARE_4K:
-            # Has (32 sectors * 4 blocks/sector + 8 sectors * 16 blocks/sector) * 16 bytes/block = 4096 bytes.
+            # Has (32 sectors * 4 blocks/sector + 8 sectors * 16 blocks/sector)
+            # * 16 bytes/block = 4096 bytes.
             no_of_sectors = 40
         else:
             no_of_sectors = 0
         return no_of_sectors
-    
+
     def get_sector_definition(self, sector):
         '''
         Returns the trailer block address, the block address for the first data block and the data block count
@@ -368,8 +363,8 @@ class PICC_Type(Enum):
         sector_trailer_block_addr = 0
         first_data_block_addr = 0
         data_block_count = 0
-        
-        if sector == 0:                             # Sector 0 has 4 blocks, but only 3 data blocks, the first block contains manufacturer data 
+
+        if sector == 0:                             # Sector 0 has 4 blocks, but only 3 data blocks, the first block contains manufacturer data
             no_of_blocks = 4
             data_block_count = 2
             first_data_block_addr = 1
@@ -384,13 +379,14 @@ class PICC_Type(Enum):
             data_block_count = 15
             first_data_block_addr = 128 + (sector - 32) * no_of_blocks
             sector_trailer_block_addr = first_data_block_addr + 15
-        
+
         return first_data_block_addr, sector_trailer_block_addr, data_block_count
-    
+
     def get_max_data_bytes(self):
-        no_of_data_blocks = (self.get_sector_count() * 3) - 1   # 3 data block per sector and only 2 data blocks for sector 0
+        # 3 data block per sector and only 2 data blocks for sector 0
+        no_of_data_blocks = (self.get_sector_count() * 3) - 1
         return no_of_data_blocks * 16                           # 16 bytes per block
-    
+
     def __str__(self):
         return self.get_name() + ' ' + Enum.__str__(self)
 
@@ -438,13 +434,14 @@ class StatusCode(Enum):
 
     def __bool__(self):
         return self == StatusCode.STATUS_OK
-    
+
     def __str__(self):
         return self.get_name() + ' ' + Enum.__str__(self)
 
-#====================================================================================
+#=========================================================================
 # UID and MIFARE KEY classes
-#====================================================================================
+#=========================================================================
+
 
 class Uid(object):
     '''
@@ -452,18 +449,20 @@ class Uid(object):
     '''
     size = 0            # Number of bytes in the UID. 4, 7 or 10.
     uid_byte = [0] * 10
-    sak = None          # The SAK (Select acknowledge) byte returned from the PICC after successful selection.
-    
+    # The SAK (Select acknowledge) byte returned from the PICC after
+    # successful selection.
+    sak = None
+
     def uid(self):
         return self.uid_byte[:self.size]
-    
+
     def to_num(self):
         n = 0
         uid = self.uid()
         for i in range(0, len(uid)):
             n = n * 256 + uid[i]
         return n
-    
+
     def get_picc_type(self):
         '''
         Translates the SAK (Select Acknowledge) to a PICC type.
@@ -471,10 +470,11 @@ class Uid(object):
         @param sak: The SAK byte returned from PICC_Select().
         @return: PICC_Type
         '''
-        # http://www.nxp.com/documents/application_note/AN10833.pdf 
+        # http://www.nxp.com/documents/application_note/AN10833.pdf
         # 3.2 Coding of Select Acknowledge (SAK)
         # ignore 8-bit (iso14443 starts with LSBit = bit 1)
-        # fixes wrong type for manufacturer Infineon (http://nfc-tools.org/index.php?title=ISO14443A)
+        # fixes wrong type for manufacturer Infineon
+        # (http://nfc-tools.org/index.php?title=ISO14443A)
         if self.sak != None:
             self.sak &= 0x7F
             if self.sak == 0x04:
@@ -498,35 +498,38 @@ class Uid(object):
             elif self.sak == 0x40:
                 return PICC_Type.PICC_TYPE_ISO_18092
         return PICC_Type.PICC_TYPE_UNKNOWN
-    
+
     def __str__(self):
         return '<UID: [{}], SAK: {:#04x}, Type: {}>'.format(format_hex(self.uid()), self.sak if self.sak else 0, self.get_picc_type())
+
 
 class MIFARE_Key(object):
     '''
     A struct used for passing a MIFARE Crypto1 key
     '''
-    key_byte = [0xFF] * 6  # A Mifare Crypto1 key is 6 bytes. All keys are set to FFFFFFFFFFFFh at chip delivery from the factory.
-    
+    # A Mifare Crypto1 key is 6 bytes. All keys are set to FFFFFFFFFFFFh at chip delivery from the factory.
+    key_byte = [0xFF] * 6
+
     def __str__(self):
         return '<MIFARE_Key: [{}]>'.format(format_hex(self.key_byte))
 
 
-#====================================================================================
+#=========================================================================
 # MFRC522
-#====================================================================================
+#=========================================================================
 
 class MFRC522(object):
     '''
     TODO
     '''
-    
+
     # Firmware data for self-test
     # Reference values based on firmware version
     # Hint: if needed, you can remove unused self-test data to save flash memory
     #
     # Version 0.0 (0x90)
-    # Philips Semiconductors; Preliminary Specification Revision 2.0 - 01 August 2005; 16.1 self-test
+    # Philips Semiconductors; Preliminary Specification Revision 2.0 - 01
+    # August 2005; 16.1 self-test
     MFRC522_firmware_referenceV0_0 = [
         0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
         0xBF, 0x22, 0x30, 0x49, 0x59, 0x63, 0xAD, 0xCA,
@@ -570,7 +573,6 @@ class MFRC522(object):
         0x51, 0x64, 0xAB, 0x3E, 0xE9, 0x15, 0xB5, 0xAB,
         0x56, 0x9A, 0x98, 0x82, 0x26, 0xEA, 0x2A, 0x62]
 
-
     def __init__(self, bus=0, device=0, speed=1000000, pin_reset=25, pin_ce=0, pin_irq=24, pin_mode=GPIO.BCM):
         '''
         Create a new MFRC522 instance
@@ -586,7 +588,7 @@ class MFRC522(object):
         self.__log_trace = logger_trace.isEnabledFor(logging.DEBUG)
         self.__log_spi = logger_spi.isEnabledFor(logging.DEBUG)
         self.__log_debug = logger_debug.isEnabledFor(logging.DEBUG)
-        
+
         self.bus = bus
         self.device = device
         self.speed = speed
@@ -594,14 +596,13 @@ class MFRC522(object):
         self.pin_ce = pin_ce
         self.pin_irq = pin_irq
         self.pin_mode = pin_mode
-        
+
         self.spi = spidev.SpiDev()
 
-
-    #====================================================================================
+    #=========================================================================
     # Basic interface functions for communicating with the MFRC522
-    #====================================================================================
-    
+    #=========================================================================
+
     def _spi_transfer(self, data):
         '''
         Transfer data from and to the pcd
@@ -611,14 +612,17 @@ class MFRC522(object):
         '''
         if self.pin_ce != 0:
             GPIO.output(self.pin_ce, 0)     # release chip-select
-        rx = self.spi.xfer2(data)            # MSB == 0 is for writing. LSB is not used in address. Datasheet section 8.1.2.3.
+        # MSB == 0 is for writing. LSB is not used in address. Datasheet
+        # section 8.1.2.3.
+        rx = self.spi.xfer2(data)
         if self.pin_ce != 0:
             GPIO.output(self.pin_ce, 1)     # reactivated chip-select
-        
+
         if self.__log_spi:
-            logger_spi.debug(_F(' receive [{}]', ' '.join(format(x, '#04x') for x in rx)))
+            logger_spi.debug(
+                _F(' receive [{}]', ' '.join(format(x, '#04x') for x in rx)))
         return rx
-    
+
     def pcd_write_register(self, reg, val):
         '''
         Writes a byte to the specified register in the MFRC522 chip.
@@ -628,8 +632,9 @@ class MFRC522(object):
         @param val: The value to write
         '''
         if self.__log_spi:
-            logger_spi.debug(_F('write_register \'{reg_name}\': [{reg_val:#04x} {val:#04x}]', reg_name=reg.name, reg_val=reg.value, val=val))
-        
+            logger_spi.debug(
+                _F('write_register \'{reg_name}\': [{reg_val:#04x} {val:#04x}]', reg_name=reg.name, reg_val=reg.value, val=val))
+
         self._spi_transfer([reg.value, val])
 
     def pcd_write_register2(self, reg, vals):
@@ -641,8 +646,9 @@ class MFRC522(object):
         @param vals: The list of values to write
         '''
         if self.__log_spi:
-            logger_spi.debug(_F('write_register2 \'{reg_name}\': [{reg_val:#04x} {values}]', reg_name=reg.name, reg_val=reg.value, values=format_hex(vals)))
-        
+            logger_spi.debug(
+                _F('write_register2 \'{reg_name}\': [{reg_val:#04x} {values}]', reg_name=reg.name, reg_val=reg.value, values=format_hex(vals)))
+
         self._spi_transfer([reg.value] + vals)
 
     def pcd_read_register(self, reg):
@@ -658,7 +664,8 @@ class MFRC522(object):
         result = self._spi_transfer([reg.value | 0x80, 0])[1]
 
         if self.__log_spi:
-            logger_spi.debug(_F('read_register \'{reg_name}\': {reg_val:#04x} result: [{result:#04x}]', reg_name=reg.name, reg_val=reg.value, result=result))
+            logger_spi.debug(
+                _F('read_register \'{reg_name}\': {reg_val:#04x} result: [{result:#04x}]', reg_name=reg.name, reg_val=reg.value, result=result))
 
         return result
 
@@ -676,36 +683,47 @@ class MFRC522(object):
             if self.__log_debug:
                 logger_debug.warn('read_register called with count <= 0')
             return []
-        
-        address = 0x80 | reg.value              # MSB == 1 is for reading. LSB is not used in address. Datasheet section 8.1.2.3.
+
+        # MSB == 1 is for reading. LSB is not used in address. Datasheet
+        # section 8.1.2.3.
+        address = 0x80 | reg.value
         index = 0                               # Index in values array.
         _count = count
         tx = []
-        
+
         _count -= 1                             # One read is performed outside of the loop
-        tx.append(address)                      # Tell MFRC522 which address we want to read
-        
-        if rx_align:                            # Only update bit positions rxAlign..7 in values[0]
-            tx.append(address)                  # Read value and tell that we want to read the same address again.
+        # Tell MFRC522 which address we want to read
+        tx.append(address)
+
+        # Only update bit positions rxAlign..7 in values[0]
+        if rx_align:
+            # Read value and tell that we want to read the same address again.
+            tx.append(address)
             index += 1
-        
+
         for __ in range(index, _count):
             tx.append(address)
-        
-        tx.append(0)                            # Read the final byte. Send 0 to stop reading.
-        
-        rx = self._spi_transfer(tx)
-        rx.pop(0)                               # Remove the first read byte (from initializing reading the register)
 
-        if rx_align:                            # Only update bit positions rxAlign..7 in values[0]
+        # Read the final byte. Send 0 to stop reading.
+        tx.append(0)
+
+        rx = self._spi_transfer(tx)
+        # Remove the first read byte (from initializing reading the register)
+        rx.pop(0)
+
+        # Only update bit positions rxAlign..7 in values[0]
+        if rx_align:
             # Create bit mask for bit positions rxAlign..7
             mask = (0xFF << rx_align) & 0xFF
-            # Apply mask to both current value of values[0] and the new data in value.
-            rx[0] = (rx[0] & ~mask) | (rx[0] & mask)        # values[0] = (values[0] & ~mask) | (value & mask);
-        
+            # Apply mask to both current value of values[0] and the new data in
+            # value.
+            # values[0] = (values[0] & ~mask) | (value & mask);
+            rx[0] = (rx[0] & ~mask) | (rx[0] & mask)
+
         if self.__log_spi:
-            logger_spi.debug(_F('read_register2 \'{reg_name}\': {reg_val:#04x}, count: {count}, rx_align: {rx_align}, result: [{values}]', reg_name=reg.name, reg_val=reg.value, count=count, rx_align=rx_align, values=format_hex(rx)))
-        
+            logger_spi.debug(
+                _F('read_register2 \'{reg_name}\': {reg_val:#04x}, count: {count}, rx_align: {rx_align}, result: [{values}]', reg_name=reg.name, reg_val=reg.value, count=count, rx_align=rx_align, values=format_hex(rx)))
+
         return rx
 
     def pcd_set_register_bitmask(self, reg, mask):
@@ -739,36 +757,49 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_calculate_crc')
-            
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_Idle.value)        # Stop any active command.
-        self.pcd_write_register(PCD_Register.DivIrqReg, 0x04)                                    # Clear the CRCIRq interrupt request bit
-        self.pcd_write_register(PCD_Register.FIFOLevelReg, 0x80)                                 # FlushBuffer = 1, FIFO initialization
-        self.pcd_write_register2(PCD_Register.FIFODataReg, data)                                 # Write data to the FIFO
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_CalcCRC.value)     # Start the calculation
+
+        # Stop any active command.
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_Idle.value)
+        # Clear the CRCIRq interrupt request bit
+        self.pcd_write_register(PCD_Register.DivIrqReg, 0x04)
+        # FlushBuffer = 1, FIFO initialization
+        self.pcd_write_register(PCD_Register.FIFOLevelReg, 0x80)
+        # Write data to the FIFO
+        self.pcd_write_register2(PCD_Register.FIFODataReg, data)
+        # Start the calculation
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_CalcCRC.value)
 
         # Wait for the CRC calculation to complete.
         #    // Arduino Uno 16bit
         #    // Wait for the CRC calculation to complete. Each iteration of the while-loop takes 17.73us.
         #    for (uint16_t i = 5000; i > 0; i--) { ... }
         for __ in range(255):
-            # DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq reserved CRCIRq reserved reserved
+            # DivIrqReg[7..0] bits are: Set2 reserved reserved MfinActIRq
+            # reserved CRCIRq reserved reserved
             n = self.pcd_read_register(PCD_Register.DivIrqReg)
-            if n & 0x04:                                                                                    # CRCIRq bit set - calculation done
-                self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_Idle.value)    # Stop calculating CRC for new content in the FIFO.
+            # CRCIRq bit set - calculation done
+            if n & 0x04:
+                # Stop calculating CRC for new content in the FIFO.
+                self.pcd_write_register(
+                    PCD_Register.CommandReg, PCD_Command.PCD_Idle.value)
                 result = []
-                result.append(self.pcd_read_register(PCD_Register.CRCResultRegL))
-                result.append(self.pcd_read_register(PCD_Register.CRCResultRegH))
+                result.append(self.pcd_read_register(
+                    PCD_Register.CRCResultRegL))
+                result.append(self.pcd_read_register(
+                    PCD_Register.CRCResultRegH))
                 return StatusCode.STATUS_OK, result
 
         # Timeout: Communication with the MFRC522 might be down.
         if self.__log_debug:
-            logger_debug.warn('Timeout during CRC_A calculation. Communication with the MFRC522 might be down')
+            logger_debug.warn(
+                'Timeout during CRC_A calculation. Communication with the MFRC522 might be down')
         return StatusCode.STATUS_TIMEOUT, None
 
-
-    #====================================================================================
+    #=========================================================================
     # Functions for manipulating the MFRC522
-    #====================================================================================
+    #=========================================================================
 
     def pcd_init(self):
         '''
@@ -779,14 +810,16 @@ class MFRC522(object):
 
         # Setup SPI
         if self.__log_debug:
-            logger_debug.info(_F('Init spidev with bus={bus}, device={device}, speed={speed}', bus=self.bus, device=self.device, speed=self.speed))
-        
+            logger_debug.info(
+                _F('Init spidev with bus={bus}, device={device}, speed={speed}', bus=self.bus, device=self.device, speed=self.speed))
+
         self.spi.open(self.bus, self.device)
         self.spi.max_speed_hz = self.speed
-        
+
         # Setup GPIO
         if self.__log_debug:
-            logger_debug.info(_F('Init GPIO with mode={mode}, pin_reset={pin_reset}, pin_ce={pin_ce}, pin_irq={pin_irq}', mode=self.pin_mode, pin_reset=self.pin_reset, pin_ce=self.pin_ce, pin_irq=self.pin_irq))
+            logger_debug.info(_F('Init GPIO with mode={mode}, pin_reset={pin_reset}, pin_ce={pin_ce}, pin_irq={pin_irq}',
+                                 mode=self.pin_mode, pin_reset=self.pin_reset, pin_ce=self.pin_ce, pin_irq=self.pin_irq))
         GPIO.setmode(self.pin_mode)
         if self.pin_irq != 0:
             GPIO.setup(self.pin_irq, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -795,45 +828,69 @@ class MFRC522(object):
             GPIO.setup(self.pin_ce, GPIO.OUT)
             GPIO.output(self.pin_ce, 1)
 
-        # If a valid pin number has been set, pull device out of power down / reset state.
+        # If a valid pin number has been set, pull device out of power down /
+        # reset state.
         hard_reset = False
         if self.pin_reset != 0:
-            # First set the resetPowerDownPin as digital input, to check the MFRC522 power down mode.
+            # First set the resetPowerDownPin as digital input, to check the
+            # MFRC522 power down mode.
             GPIO.setup(self.pin_reset, GPIO.IN)
-            if GPIO.input(self.pin_reset) == GPIO.LOW:          # The MFRC522 chip is in power down mode.
+            # The MFRC522 chip is in power down mode.
+            if GPIO.input(self.pin_reset) == GPIO.LOW:
                 if self.__log_debug:
-                    logger_debug.debug('MFRC522 is in power down mode. Trigger a hard reset')
-                GPIO.setup(self.pin_reset, GPIO.OUT)            # Now set the resetPowerDownPin as digital output.
-                GPIO.output(self.pin_reset, 0)                  # Make shure we have a clean LOW state.
-                usleep(2)                                       # 8.8.1 Reset timing requirements says about 100ns. Let us be generous: 2μsl
-                GPIO.output(self.pin_reset, 1)                  # Exit power down mode. This triggers a hard reset.
-                # Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74μs. Let us be generous: 50ms.
+                    logger_debug.debug(
+                        'MFRC522 is in power down mode. Trigger a hard reset')
+                # Now set the resetPowerDownPin as digital output.
+                GPIO.setup(self.pin_reset, GPIO.OUT)
+                # Make shure we have a clean LOW state.
+                GPIO.output(self.pin_reset, 0)
+                # 8.8.1 Reset timing requirements says about 100ns. Let us be
+                # generous: 2μsl
+                usleep(2)
+                # Exit power down mode. This triggers a hard reset.
+                GPIO.output(self.pin_reset, 1)
+                # Section 8.8.2 in the datasheet says the oscillator start-up
+                # time is the start up time of the crystal + 37,74μs. Let us be
+                # generous: 50ms.
                 sleep(0.05)
                 hard_reset = True
-    
+
         if not hard_reset:      # Perform a soft reset if we haven't triggered a hard reset above.
             if self.__log_debug:
-                logger_debug.debug('MFRC522 is not in power down mode. Perform a soft reset')
+                logger_debug.debug(
+                    'MFRC522 is not in power down mode. Perform a soft reset')
             self.pcd_reset()
-        
+
         # Reset baud rates
         self.pcd_write_register(PCD_Register.TxModeReg, 0x00)
         self.pcd_write_register(PCD_Register.RxModeReg, 0x00)
         # Reset ModWidthReg
         self.pcd_write_register(PCD_Register.ModWidthReg, 0x26)
-    
+
         # When communicating with a PICC we need a timeout if something goes wrong.
         # f_timer = 13.56 MHz / (2*TPreScaler+1) where TPreScaler = [TPrescaler_Hi:TPrescaler_Lo].
-        # TPrescaler_Hi are the four low bits in TModeReg. TPrescaler_Lo is TPrescalerReg.
-        self.pcd_write_register(PCD_Register.TModeReg, 0x80)        # TAuto=1; timer starts automatically at the end of the transmission in all communication modes at all speeds
-        self.pcd_write_register(PCD_Register.TPrescalerReg, 0xA9)   # TPreScaler = TModeReg[3..0]:TPrescalerReg, ie 0x0A9 = 169 => f_timer=40kHz, ie a timer period of 25 micro seconds.
-        self.pcd_write_register(PCD_Register.TReloadRegH, 0x03)     # Reload timer with 0x3E8 = 1000, ie 25ms before timeout.
+        # TPrescaler_Hi are the four low bits in TModeReg. TPrescaler_Lo is
+        # TPrescalerReg.
+        # TAuto=1; timer starts automatically at the end of the transmission in
+        # all communication modes at all speeds
+        self.pcd_write_register(PCD_Register.TModeReg, 0x80)
+        # TPreScaler = TModeReg[3..0]:TPrescalerReg, ie 0x0A9 = 169 =>
+        # f_timer=40kHz, ie a timer period of 25 micro seconds.
+        self.pcd_write_register(PCD_Register.TPrescalerReg, 0xA9)
+        # Reload timer with 0x3E8 = 1000, ie 25ms before timeout.
+        self.pcd_write_register(PCD_Register.TReloadRegH, 0x03)
         self.pcd_write_register(PCD_Register.TReloadRegL, 0xE8)
-        
-        self.pcd_write_register(PCD_Register.TxASKReg, 0x40)        # Default 0x00. Force a 100 % ASK modulation independent of the ModGsPReg register setting
-        self.pcd_write_register(PCD_Register.ModeReg, 0x3D)         # Default 0x3F. Set the preset value for the CRC coprocessor for the CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
-        self.antenna_on()                                                # Enable the antenna driver pins TX1 and TX2 (they were disabled by the reset)
-    
+
+        # Default 0x00. Force a 100 % ASK modulation independent of the
+        # ModGsPReg register setting
+        self.pcd_write_register(PCD_Register.TxASKReg, 0x40)
+        # Default 0x3F. Set the preset value for the CRC coprocessor for the
+        # CalcCRC command to 0x6363 (ISO 14443-3 part 6.2.4)
+        self.pcd_write_register(PCD_Register.ModeReg, 0x3D)
+        # Enable the antenna driver pins TX1 and TX2 (they were disabled by the
+        # reset)
+        self.antenna_on()
+
     def pcd_cleanup(self):
         '''
         Cleanup GPIO and close SPI device
@@ -848,7 +905,7 @@ class MFRC522(object):
             pins.append(self.pin_irq)
         if self.pin_reset > 0:
             pins.append(self.pin_reset)
-        
+
         if len(pins) > 0:
             GPIO.cleanup(pins)
         self.spi.close()
@@ -859,13 +916,18 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_reset')
-        
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_SoftReset.value)  # Issue the SoftReset command.
+
+        # Issue the SoftReset command.
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_SoftReset.value)
         # The datasheet does not mention how long the SoftRest command takes to complete.
-        # But the MFRC522 might have been in soft power-down mode (triggered by bit 4 of CommandReg) 
-        # Section 8.8.2 in the datasheet says the oscillator start-up time is the start up time of the crystal + 37,74 micro seconds. Let us be generous: 50ms.
+        # But the MFRC522 might have been in soft power-down mode (triggered by bit 4 of CommandReg)
+        # Section 8.8.2 in the datasheet says the oscillator start-up time is
+        # the start up time of the crystal + 37,74 micro seconds. Let us be
+        # generous: 50ms.
         for __ in range(3):
-            # Wait for the PowerDown bit in CommandReg to be cleared (max 3x50ms)
+            # Wait for the PowerDown bit in CommandReg to be cleared (max
+            # 3x50ms)
             sleep(0.05)
             if not (self.pcd_read_register(PCD_Register.CommandReg) & (1 << 4)):
                 break
@@ -913,9 +975,12 @@ class MFRC522(object):
         if self.__log_trace:
             logger_trace.debug('>> pcd_set_antenna_gain')
 
-        if self.pcd_get_antenna_gain() != mask:                                           # only bother if there is a change
-            self.pcd_clear_register_bitmask(PCD_Register.RFCfgReg, (0x07<<4))        # clear needed to allow 000 pattern
-            self.pcd_set_register_bitmask(PCD_Register.RFCfgReg, mask & (0x07<<4))   # only set RxGain[2:0] bits
+        # only bother if there is a change
+        if self.pcd_get_antenna_gain() != mask:
+            # clear needed to allow 000 pattern
+            self.pcd_clear_register_bitmask(PCD_Register.RFCfgReg, (0x07 << 4))
+            self.pcd_set_register_bitmask(PCD_Register.RFCfgReg, mask & (
+                0x07 << 4))   # only set RxGain[2:0] bits
 
     def pcd_perform_self_test(self):
         '''
@@ -930,22 +995,27 @@ class MFRC522(object):
         # This follows directly the steps outlined in 16.1.1
         # 1. Perform a soft reset.
         self.pcd_reset()
-    
+
         # 2. Clear the internal buffer by writing 25 bytes of 00h
         zeroes = [0] * 25
-        self.pcd_write_register(PCD_Register.FIFOLevelReg, 0x80)                             # flush the FIFO buffer
-        self.pcd_write_register2(PCD_Register.FIFODataReg, zeroes)                           # write 25 bytes of 00h to FIFO
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_Mem.value)     # transfer to internal buffer
-    
+        # flush the FIFO buffer
+        self.pcd_write_register(PCD_Register.FIFOLevelReg, 0x80)
+        # write 25 bytes of 00h to FIFO
+        self.pcd_write_register2(PCD_Register.FIFODataReg, zeroes)
+        # transfer to internal buffer
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_Mem.value)
+
         # 3. Enable self-test
         self.pcd_write_register(PCD_Register.AutoTestReg, 0x09)
-    
+
         # 4. Write 00h to FIFO buffer
         self.pcd_write_register(PCD_Register.FIFODataReg, 0x00)
-    
+
         # 5. Start self-test by issuing the CalcCRC command
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_CalcCRC.value)
-    
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_CalcCRC.value)
+
         # 6. Wait for self-test to complete
         for __ in range(255):
             # The datasheet does not specify exact completion condition except
@@ -959,18 +1029,21 @@ class MFRC522(object):
             if n >= 64:
                 break
 
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_Idle.value)    # Stop calculating CRC for new content in the FIFO.
-    
+        # Stop calculating CRC for new content in the FIFO.
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_Idle.value)
+
         # 7. Read out resulting 64 bytes from the FIFO buffer.
         result = self.pcd_read_register2(PCD_Register.FIFODataReg, 64, 0)
-    
+
         # Auto self-test done
-        # Reset AutoTestReg register to be 0 again. Required for normal operation.
+        # Reset AutoTestReg register to be 0 again. Required for normal
+        # operation.
         self.pcd_write_register(PCD_Register.AutoTestReg, 0x00)
-    
+
         # Determine firmware version (see section 9.3.4.8 in spec)
         version = self.pcd_read_register(PCD_Register.VersionReg)
-    
+
         # Pick the appropriate reference values
         #const byte *reference;
         if version == 0x88:    # Fudan Semiconductor FM17522 clone
@@ -981,25 +1054,25 @@ class MFRC522(object):
             reference = self.MFRC522_firmware_referenceV1_0
         elif version == 0x92:    # Version 2.0
             reference = self.MFRC522_firmware_referenceV2_0
-        else: #Unknown version
-            return False # abort test
-    
+        else:  # Unknown version
+            return False  # abort test
+
         # Verify that the results match up to our expectations
         for i in range(64):
             if result[i] != reference[i]:
                 return False
-    
+
         # Test passed; all is good.
         return True
 
-
-    #====================================================================================
+    #=========================================================================
     # Power control
-    #====================================================================================
+    #=========================================================================
 
     # IMPORTANT NOTE!!!!
     # Calling any other function that uses CommandReg will disable soft power down mode !!!
-    # For more details about power control, refer to the datasheet - page 33 (8.6)
+    # For more details about power control, refer to the datasheet - page 33
+    # (8.6)
 
     def pcd_soft_power_down(self):
         '''
@@ -1007,9 +1080,12 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_soft_power_down')
-        val = self.pcd_read_register(PCD_Register.CommandReg)    # Read state of the command register
-        val |= (1<<4)                                                   # set PowerDown bit ( bit 4 ) to 1 
-        self.pcd_write_register(PCD_Register.CommandReg, val)    # write new value to the command register
+        # Read state of the command register
+        val = self.pcd_read_register(PCD_Register.CommandReg)
+        # set PowerDown bit ( bit 4 ) to 1
+        val |= (1 << 4)
+        # write new value to the command register
+        self.pcd_write_register(PCD_Register.CommandReg, val)
 
     def pcd_soft_power_up(self):
         '''
@@ -1017,20 +1093,26 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_soft_power_up')
-        val = self.pcd_read_register(PCD_Register.CommandReg)    # Read state of the command register
-        val &= ~(1<<4)                                                  # set PowerDown bit ( bit 4 ) to 0 
-        self.pcd_write_register(PCD_Register.CommandReg, val)    # write new value to the command register
-        
-        # wait until PowerDown bit is cleared (this indicates end of wake up procedure)
+        # Read state of the command register
+        val = self.pcd_read_register(PCD_Register.CommandReg)
+        # set PowerDown bit ( bit 4 ) to 0
+        val &= ~(1 << 4)
+        # write new value to the command register
+        self.pcd_write_register(PCD_Register.CommandReg, val)
+
+        # wait until PowerDown bit is cleared (this indicates end of wake up
+        # procedure)
         for __ in range(125):       # On Arduino timeout is set to 500 ms
-            val = self.pcd_read_register(PCD_Register.CommandReg)# Read state of the command register
-            if not (val & (1<<4)):                                      # if powerdown bit is 0 
-                break                                                   # wake up procedure is finished 
+            # Read state of the command register
+            val = self.pcd_read_register(PCD_Register.CommandReg)
+            # if powerdown bit is 0
+            if not (val & (1 << 4)):
+                # wake up procedure is finished
+                break
 
-
-    #====================================================================================
+    #=========================================================================
     # Functions for communicating with PICCs
-    #====================================================================================
+    #=========================================================================
 
     def pcd_transceive_data(self, send_data, wants_back_data=False, tx_valid_bits=0, rx_align=0, check_crc=False):
         '''
@@ -1046,10 +1128,10 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_transceive_data')
-        
+
         wait_irq = 0x30     # RxIRq and IdleIRq
         return self.pcd_communicate_with_picc(PCD_Command.PCD_Transceive, wait_irq, send_data, wants_back_data, tx_valid_bits, rx_align, check_crc)
-    
+
     def pcd_communicate_with_picc(self, command, wait_irq, send_data, wants_back_data, tx_valid_bits, rx_align=0, check_crc=False):
         '''
         Transfers data to the MFRC522 FIFO, executes a command, waits for completion and transfers data back from the FIFO.
@@ -1066,91 +1148,121 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_communicate_with_pic')
-        
+
         # Prepare values for BitFramingReg
-        bit_framing = (rx_align << 4) + tx_valid_bits    # RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
-        
-        self.pcd_write_register(PCD_Register.CommandReg, PCD_Command.PCD_Idle.value)  # Stop any active command.
-        self.pcd_write_register(PCD_Register.ComIrqReg, 0x7F)                        # Clear all seven interrupt request bits
-        self.pcd_write_register(PCD_Register.FIFOLevelReg, 0x80)                     # FlushBuffer = 1, FIFO initialization
-        self.pcd_write_register2(PCD_Register.FIFODataReg, send_data)                # Write sendData to the FIFO
-        self.pcd_write_register(PCD_Register.BitFramingReg, bit_framing)             # Bit adjustments
-        self.pcd_write_register(PCD_Register.CommandReg, command.value)              # Execute the command
-        
+        # RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
+        bit_framing = (rx_align << 4) + tx_valid_bits
+
+        # Stop any active command.
+        self.pcd_write_register(PCD_Register.CommandReg,
+                                PCD_Command.PCD_Idle.value)
+        # Clear all seven interrupt request bits
+        self.pcd_write_register(PCD_Register.ComIrqReg, 0x7F)
+        # FlushBuffer = 1, FIFO initialization
+        self.pcd_write_register(PCD_Register.FIFOLevelReg, 0x80)
+        # Write sendData to the FIFO
+        self.pcd_write_register2(PCD_Register.FIFODataReg, send_data)
+        # Bit adjustments
+        self.pcd_write_register(PCD_Register.BitFramingReg, bit_framing)
+        # Execute the command
+        self.pcd_write_register(PCD_Register.CommandReg, command.value)
+
         if command == PCD_Command.PCD_Transceive:
-            self.pcd_set_register_bitmask(PCD_Register.BitFramingReg, 0x80);         # StartSend=1, transmission of data starts
-        
+            # StartSend=1, transmission of data starts
+            self.pcd_set_register_bitmask(PCD_Register.BitFramingReg, 0x80)
+
         # Wait for the command to complete.
         # In PCD_Init() we set the TAuto flag in TModeReg. This means the timer automatically starts when the PCD stops transmitting.
         #    // Arduino Uno 16bit
         #    // Wait for the command to complete. Each iteration of the while-loop takes 17.73us.
         #    for (i = 2000; i > 0; i--) { ... }
         for i in range(125, 0, -1):
-            n = self.pcd_read_register(PCD_Register.ComIrqReg)   # ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq LoAlertIRq ErrIRq TimerIRq
-            if n & wait_irq:                                            # One of the interrupts that signal success has been set.
+            # ComIrqReg[7..0] bits are: Set1 TxIRq RxIRq IdleIRq HiAlertIRq
+            # LoAlertIRq ErrIRq TimerIRq
+            n = self.pcd_read_register(PCD_Register.ComIrqReg)
+            # One of the interrupts that signal success has been set.
+            if n & wait_irq:
                 break
             if n & 0x01:                                                # Timer interrupt - nothing received in 25ms
                 return StatusCode.STATUS_TIMEOUT, None, None
 
-        # Timout (on Ardunion 35.7ms) and nothing happend. Communication with the MFRC522 might be down.
+        # Timout (on Ardunion 35.7ms) and nothing happend. Communication with
+        # the MFRC522 might be down.
         if i == 0:
             if self.__log_debug:
-                logger_debug.warn(_F('Timeout during communication with PICC (Command={}). Communication with the MFRC522 might be down', command.name))
+                logger_debug.warn(
+                    _F('Timeout during communication with PICC (Command={}). Communication with the MFRC522 might be down', command.name))
             return StatusCode.STATUS_TIMEOUT, None, None
 
         # Stop now if any errors except collisions were detected.
-        error_reg_value = self.pcd_read_register(PCD_Register.ErrorReg)  # ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr CRCErr ParityErr ProtocolErr
+        # ErrorReg[7..0] bits are: WrErr TempErr reserved BufferOvfl CollErr
+        # CRCErr ParityErr ProtocolErr
+        error_reg_value = self.pcd_read_register(PCD_Register.ErrorReg)
         if error_reg_value & 0x13:                                              # BufferOvfl ParityErr ProtocolErr
             if self.__log_debug:
-                logger_debug.warn(_F('Error detected during communication with PICC (Command={}). Error register value: {:#04x}', command.name, error_reg_value))
+                logger_debug.warn(
+                    _F('Error detected during communication with PICC (Command={}). Error register value: {:#04x}', command.name, error_reg_value))
             return StatusCode.STATUS_ERROR, None, None
 
         rx_valid_bits = 0
-    
+
         # If the caller wants data back, get it from the MFRC522.
         rx_back_data = []
         rx_back_data_len = 0
         if wants_back_data:
             if self.__log_trace:
-                logger_trace.debug('>> pcd_communicate_with_pic: read back data')
-            n = self.pcd_read_register(PCD_Register.FIFOLevelReg)                            # Number of bytes in the FIFO
+                logger_trace.debug(
+                    '>> pcd_communicate_with_pic: read back data')
+            # Number of bytes in the FIFO
+            n = self.pcd_read_register(PCD_Register.FIFOLevelReg)
             if n > 0:
-                rx_back_data = self.pcd_read_register2(PCD_Register.FIFODataReg, n, rx_align)    # Get received data from FIFO
+                rx_back_data = self.pcd_read_register2(
+                    PCD_Register.FIFODataReg, n, rx_align)    # Get received data from FIFO
                 rx_back_data_len = len(rx_back_data)
-            rx_valid_bits = self.pcd_read_register(PCD_Register.ControlReg) & 0x07           # RxLastBits[2:0] indicates the number of valid bits in the last received byte. If this value is 000b, the whole byte is valid.
-            
+            # RxLastBits[2:0] indicates the number of valid bits in the last
+            # received byte. If this value is 000b, the whole byte is valid.
+            rx_valid_bits = self.pcd_read_register(
+                PCD_Register.ControlReg) & 0x07
+
         # Tell about collisions
         if error_reg_value & 0x08:        # CollErr
             if self.__log_debug:
-                logger_debug.debug(_F('Collision detected during communication with PICC (Command={}). Error register value: {:#04x}', command.name, error_reg_value))
+                logger_debug.debug(
+                    _F('Collision detected during communication with PICC (Command={}). Error register value: {:#04x}', command.name, error_reg_value))
             return StatusCode.STATUS_COLLISION, rx_back_data, rx_valid_bits
 
         # Perform CRC_A validation if requested.
         if wants_back_data and rx_back_data_len > 0 and check_crc:
             if self.__log_trace:
-                logger_trace.debug('>> pcd_communicate_with_pic: CRC_A validation for back data')
+                logger_trace.debug(
+                    '>> pcd_communicate_with_pic: CRC_A validation for back data')
             # In this case a MIFARE Classic NAK is not OK.
             if rx_back_data_len == 1 and rx_valid_bits == 4:
                 if self.__log_debug:
-                    logger_debug.warn(_F('Communication with PICC resulted in MIFARE Classic NAK (Command={})', command.name))
+                    logger_debug.warn(
+                        _F('Communication with PICC resulted in MIFARE Classic NAK (Command={})', command.name))
                 return StatusCode.STATUS_MIFARE_NACK, rx_back_data, rx_valid_bits
-            # We need at least the CRC_A value and all 8 bits of the last byte must be received.
+            # We need at least the CRC_A value and all 8 bits of the last byte
+            # must be received.
             if rx_back_data_len < 2 or rx_valid_bits != 0:
                 if self.__log_debug:
-                    logger_debug.warn(_F('Not enough bits for CRC_A calculation received from communication with PICC (Command={})', command.name))
+                    logger_debug.warn(
+                        _F('Not enough bits for CRC_A calculation received from communication with PICC (Command={})', command.name))
                 return StatusCode.STATUS_CRC_WRONG, rx_back_data, rx_valid_bits
-            # Verify CRC_A - do our own calculation and store the control in controlBuffer.
-            status, control_buffer = self.pcd_calulate_crc(rx_back_data[:rx_back_data_len - 2])
+            # Verify CRC_A - do our own calculation and store the control in
+            # controlBuffer.
+            status, control_buffer = self.pcd_calulate_crc(
+                rx_back_data[:rx_back_data_len - 2])
             if status != StatusCode.STATUS_OK:
                 return status, rx_back_data, rx_valid_bits
             if (rx_back_data[rx_back_data_len - 2] != control_buffer[0]) or (rx_back_data[rx_back_data_len - 1] != control_buffer[1]):
                 if self.__log_debug:
-                    logger_debug.warn(_F('Wrong CRC_A value received from communication with PICC (Command: {}, expected: [ {:#04x} {:#04x} ], actual: [ {:#04x} {:#04x} ])', 
+                    logger_debug.warn(_F('Wrong CRC_A value received from communication with PICC (Command: {}, expected: [ {:#04x} {:#04x} ], actual: [ {:#04x} {:#04x} ])',
                                          command.name, rx_back_data[rx_back_data_len - 2], rx_back_data[rx_back_data_len - 1], control_buffer[0], control_buffer[1]))
                 return StatusCode.STATUS_CRC_WRONG, None, None
-    
+
         return StatusCode.STATUS_OK, rx_back_data, rx_valid_bits
-    
+
     def picc_request_a(self):
         '''
         Transmits a REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection. 7 bit frame.
@@ -1160,7 +1272,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_request_a')
-        
+
         return self.picc_reqa_or_wupa(PICC_Command.PICC_CMD_REQA)
 
     def picc_wakeup_a(self):
@@ -1172,7 +1284,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_wakeup_a')
-        
+
         return self.picc_reqa_or_wupa(PICC_Command.PICC_CMD_WUPA)
 
     def picc_reqa_or_wupa(self, command):
@@ -1183,12 +1295,17 @@ class MFRC522(object):
         @param command: The command to send - PICC_CMD_REQA or PICC_CMD_WUPA
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
         '''
-        self.pcd_clear_register_bitmask(PCD_Register.CollReg, 0x80)  # ValuesAfterColl=1 => Bits received after collision are cleared.
-        tx_valid_bits = 7                                                   # For REQA and WUPA we need the short frame format - transmit only 7 bits of the last (and only) byte. TxLastBits = BitFramingReg[2..0]
-        status, rx_back_data, rx_valid_bits = self.pcd_transceive_data([command.value], True, tx_valid_bits)
+        self.pcd_clear_register_bitmask(
+            PCD_Register.CollReg, 0x80)  # ValuesAfterColl=1 => Bits received after collision are cleared.
+        # For REQA and WUPA we need the short frame format - transmit only 7
+        # bits of the last (and only) byte. TxLastBits = BitFramingReg[2..0]
+        tx_valid_bits = 7
+        status, rx_back_data, rx_valid_bits = self.pcd_transceive_data(
+            [command.value], True, tx_valid_bits)
         if status != StatusCode.STATUS_OK:
             return status, rx_back_data
-        if len(rx_back_data) != 2 or rx_valid_bits != 0:                    # ATQA must be exactly 16 bits.
+        # ATQA must be exactly 16 bits.
+        if len(rx_back_data) != 2 or rx_valid_bits != 0:
             return StatusCode.STATUS_ERROR, rx_back_data
         return StatusCode.STATUS_OK, rx_back_data
 
@@ -1214,7 +1331,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_select')
-        
+
         _uid = uid if uid else Uid()
         # bool selectDone;
         # useCascadeTag;
@@ -1223,19 +1340,26 @@ class MFRC522(object):
         # byte count;
         # byte checkBit;
         # byte index;
-        uid_index = 0                   # The first index in uid->uidByte[] that is used in the current Cascade Level.
+        # The first index in uid->uidByte[] that is used in the current Cascade
+        # Level.
+        uid_index = 0
         # int8_t currentLevelKnownBits;        // The number of known UID bits in the current Cascade Level.
-        # byte _buffer[9];                    // The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2 bytes CRC_A
-        _buffer = [0] * 9                # The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2 bytes CRC_A
-        buffer_used = 0                 # The number of bytes used in the _buffer, ie the number of bytes to transfer to the FIFO.
+        # byte _buffer[9];                    // The SELECT/ANTICOLLISION
+        # commands uses a 7 byte standard frame + 2 bytes CRC_A
+        # The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2
+        # bytes CRC_A
+        _buffer = [0] * 9
+        # The number of bytes used in the _buffer, ie the number of bytes to
+        # transfer to the FIFO.
+        buffer_used = 0
         # byte rxAlign;                    // Used in BitFramingReg. Defines the bit position for the first bit received.
-        # byte txLastBits;                // Used in BitFramingReg. The number of valid bits in the last transmitted byte. 
+        # byte txLastBits;                // Used in BitFramingReg. The number of valid bits in the last transmitted byte.
         # byte *responseBuffer;
         # byte responseLength;
 
         # Description of _buffer structure:
         #        Byte 0: SEL                 Indicates the Cascade Level: PICC_CMD_SEL_CL1, PICC_CMD_SEL_CL2 or PICC_CMD_SEL_CL3
-        #        Byte 1: NVB                    Number of Valid Bits (in complete command, not just the UID): High nibble: complete bytes, Low nibble: Extra bits. 
+        #        Byte 1: NVB                    Number of Valid Bits (in complete command, not just the UID): High nibble: complete bytes, Low nibble: Extra bits.
         #        Byte 2: UID-data or CT        See explanation below. CT means Cascade Tag.
         #        Byte 3: UID-data
         #        Byte 4: UID-data
@@ -1258,35 +1382,42 @@ class MFRC522(object):
         # Sanity checks
         if rx_valid_bits > 80:
             if self.__log_debug:
-                logger_debug.error(_F('Invalid valid_bits for picc_select. rx_valid_bits: {}', rx_valid_bits))
+                logger_debug.error(
+                    _F('Invalid valid_bits for picc_select. rx_valid_bits: {}', rx_valid_bits))
             return StatusCode.STATUS_INVALID, _uid
 
         # Prepare MFRC522
-        self.pcd_clear_register_bitmask(PCD_Register.CollReg, 0x80)      # ValuesAfterColl=1 => Bits received after collision are cleared.
+        # ValuesAfterColl=1 => Bits received after collision are cleared.
+        self.pcd_clear_register_bitmask(PCD_Register.CollReg, 0x80)
 
         # Repeat Cascade Level loop until we have a complete UID.
         uid_complete = False
         while not uid_complete:
             if self.__log_trace:
                 logger_trace.debug('>> picc_select: cascade loop iteration')
-            # Set the Cascade Level in the SEL byte, find out if we need to use the Cascade Tag in byte 2.
+            # Set the Cascade Level in the SEL byte, find out if we need to use
+            # the Cascade Tag in byte 2.
             if cascade_level == 1:
                 _buffer[0] = PICC_Command.PICC_CMD_SEL_CL1.value
                 uid_index = 0
-                use_cascade_tag = rx_valid_bits and _uid.size > 4    # When we know that the UID has more than 4 bytes
+                # When we know that the UID has more than 4 bytes
+                use_cascade_tag = rx_valid_bits and _uid.size > 4
             elif cascade_level == 2:
                 _buffer[0] = PICC_Command.PICC_CMD_SEL_CL2.value
                 uid_index = 3
-                use_cascade_tag = rx_valid_bits and _uid.size > 7    # When we know that the UID has more than 7 bytes
+                # When we know that the UID has more than 7 bytes
+                use_cascade_tag = rx_valid_bits and _uid.size > 7
             elif cascade_level == 3:
                 _buffer[0] = PICC_Command.PICC_CMD_SEL_CL3.value
                 uid_index = 6
-                use_cascade_tag = False                             # Never used in CL3.
+                # Never used in CL3.
+                use_cascade_tag = False
             else:
                 if self.__log_debug:
-                    logger_debug.error(_F('Error occured in picc_select. Wrong cascade level. cascade: {}', cascade_level))
+                    logger_debug.error(
+                        _F('Error occured in picc_select. Wrong cascade level. cascade: {}', cascade_level))
                 return StatusCode.STATUS_INTERNAL_ERROR, _uid
-    
+
             # How many UID bits are known in this Cascade Level?
             current_level_known_bits = rx_valid_bits - (8 * uid_index)
             if current_level_known_bits < 0:
@@ -1296,151 +1427,207 @@ class MFRC522(object):
             if use_cascade_tag:
                 _buffer[index] = PICC_Command.PICC_CMD_CT.value
                 index += 1
-            bytes_to_copy = current_level_known_bits // 8 + (1 if current_level_known_bits % 8 else 0)  # The number of bytes needed to represent the known bits for this level.
+            # The number of bytes needed to represent the known bits for this
+            # level.
+            bytes_to_copy = current_level_known_bits // 8 + \
+                (1 if current_level_known_bits % 8 else 0)
             if bytes_to_copy:
-                max_bytes = 3 if use_cascade_tag else 4                                                 # Max 4 bytes in each Cascade Level. Only 3 left if we use the Cascade Tag
+                # Max 4 bytes in each Cascade Level. Only 3 left if we use the
+                # Cascade Tag
+                max_bytes = 3 if use_cascade_tag else 4
                 if bytes_to_copy > max_bytes:
                     bytes_to_copy = max_bytes
                 for count in range(bytes_to_copy):
                     _buffer[index] = _uid.uid_byte[uid_index + count]
                     index += 1
-            # Now that the data has been copied we need to include the 8 bits in CT in currentLevelKnownBits
+            # Now that the data has been copied we need to include the 8 bits
+            # in CT in currentLevelKnownBits
             if use_cascade_tag:
                 current_level_known_bits += 8
-    
-            # Repeat anti collision loop until we can transmit all UID bits + BCC and receive a SAK - max 32 iterations.
+
+            # Repeat anti collision loop until we can transmit all UID bits +
+            # BCC and receive a SAK - max 32 iterations.
             select_done = False
             while not select_done:
                 if self.__log_trace:
-                    logger_trace.debug('>> picc_select: cascade loop iteration: anti collision loop iteration')
+                    logger_trace.debug(
+                        '>> picc_select: cascade loop iteration: anti collision loop iteration')
                 # Find out how many bits and bytes to send and receive.
-                if current_level_known_bits >= 32:                                  # All UID bits in this Cascade Level are known. This is a SELECT.
+                # All UID bits in this Cascade Level are known. This is a
+                # SELECT.
+                if current_level_known_bits >= 32:
                     if self.__log_trace:
-                        logger_trace.debug(_F('>> picc_select: cascade loop iteration: anti collision loop iteration: all UID bits ({}) in cascade level are known --> SELECT', current_level_known_bits))
+                        logger_trace.debug(
+                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration: all UID bits ({}) in cascade level are known --> SELECT', current_level_known_bits))
                     # Serial.print(F("SELECT: currentLevelKnownBits=")); Serial.println(currentLevelKnownBits, DEC);
-                    _buffer[1] = 0x70                                                # NVB - Number of Valid Bits: Seven whole bytes
+                    # NVB - Number of Valid Bits: Seven whole bytes
+                    _buffer[1] = 0x70
                     # Calculate BCC - Block Check Character
                     _buffer[6] = _buffer[2] ^ _buffer[3] ^ _buffer[4] ^ _buffer[5]
                     # Calculate CRC_A
-                    status, crc_result = self.pcd_calulate_crc(_buffer[:7])        #PCD_CalculateCRC(_buffer, 7, &_buffer[7]);
+                    # PCD_CalculateCRC(_buffer, 7, &_buffer[7]);
+                    status, crc_result = self.pcd_calulate_crc(_buffer[:7])
                     if status != StatusCode.STATUS_OK:
                         if self.__log_debug:
-                            logger_debug.error(_F('Error occured in picc_select anti collision loop. Calculation of CRC_A not OK: {}', status.name))
+                            logger_debug.error(
+                                _F('Error occured in picc_select anti collision loop. Calculation of CRC_A not OK: {}', status.name))
                         return status, _uid
                     _buffer[7] = crc_result[0]
                     _buffer[8] = crc_result[1]
-                    tx_last_bits        = 0     #0 => All 8 bits are valid.
-                    buffer_used         = 9
-                    # Store response in the last 3 bytes of _buffer (BCC and CRC_A - not needed after tx)
-                    response_buffer_index   = 6
-                    response_length         = 3
+                    tx_last_bits = 0  # 0 => All 8 bits are valid.
+                    buffer_used = 9
+                    # Store response in the last 3 bytes of _buffer (BCC and
+                    # CRC_A - not needed after tx)
+                    response_buffer_index = 6
+                    response_length = 3
                 else:   # This is an ANTICOLLISION.
                     if self.__log_trace:
-                        logger_trace.debug(_F('>> picc_select: cascade loop iteration: anti collision loop iteration: (current_level_known_bits={}) --> ANTICOLLISION', current_level_known_bits))
+                        logger_trace.debug(
+                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration: (current_level_known_bits={}) --> ANTICOLLISION', current_level_known_bits))
                     # Serial.print(F("ANTICOLLISION: currentLevelKnownBits=")); Serial.println(currentLevelKnownBits, DEC);
-                    tx_last_bits        = current_level_known_bits % 8
-                    count            = current_level_known_bits // 8    # Number of whole bytes in the UID part.
-                    index            = 2 + count                        # Number of whole bytes: SEL + NVB + UIDs
-                    _buffer[1]        = (index << 4) + tx_last_bits     # NVB - Number of Valid Bits
-                    buffer_used        = index + (1 if tx_last_bits else 0)
+                    tx_last_bits = current_level_known_bits % 8
+                    # Number of whole bytes in the UID part.
+                    count = current_level_known_bits // 8
+                    index = 2 + count                        # Number of whole bytes: SEL + NVB + UIDs
+                    # NVB - Number of Valid Bits
+                    _buffer[1] = (index << 4) + tx_last_bits
+                    buffer_used = index + (1 if tx_last_bits else 0)
                     # Store response in the unused part of _buffer
-                    response_buffer_index    = index
-                    response_length    = len(_buffer) - index
-    
+                    response_buffer_index = index
+                    response_length = len(_buffer) - index
+
                 # Set bit adjustments
-                rx_align = tx_last_bits                                                                         # Having a separate variable is overkill. But it makes the next line easier to read.
-                self.pcd_write_register(PCD_Register.BitFramingReg, (rx_align << 4) + tx_last_bits)      # RxAlign = BitFramingReg[6..4]. TxLastBits = BitFramingReg[2..0]
-    
+                # Having a separate variable is overkill. But it makes the next
+                # line easier to read.
+                rx_align = tx_last_bits
+                # RxAlign = BitFramingReg[6..4]. TxLastBits =
+                # BitFramingReg[2..0]
+                self.pcd_write_register(
+                    PCD_Register.BitFramingReg, (rx_align << 4) + tx_last_bits)
+
                 # Transmit the _buffer and receive the response.
-                status, _rx_back_data, _rx_valid_bits = self.pcd_transceive_data(_buffer[:buffer_used], True, tx_last_bits, rx_align)
+                status, _rx_back_data, _rx_valid_bits = self.pcd_transceive_data(
+                    _buffer[:buffer_used], True, tx_last_bits, rx_align)
                 if _rx_back_data:
                     if self.__log_trace:
-                        logger_trace.debug(_F('>> picc_select: cascade loop iteration: anti collision loop iteration: copy data. data: [{}], buffer_index: {}', format_hex(_rx_back_data), response_buffer_index))
-                    for i in range(len(_rx_back_data)):                             # copy _rx_back_data into _buffer starting from response_buffer_index
+                        logger_trace.debug(_F('>> picc_select: cascade loop iteration: anti collision loop iteration: copy data. data: [{}], buffer_index: {}', format_hex(
+                            _rx_back_data), response_buffer_index))
+                    # copy _rx_back_data into _buffer starting from
+                    # response_buffer_index
+                    for i in range(len(_rx_back_data)):
                         _buffer[response_buffer_index + i] = _rx_back_data[i]
                 else:
                     if self.__log_debug:
-                        logger_debug.warn(_F('No back data received from transceive_data in picc_select anti collision loop. buffer: [{}], used: {}, tx_last_bits: {}, rx_align: {}', format_hex(_buffer), buffer_used, tx_last_bits, rx_align))
-                
-                if status == StatusCode.STATUS_COLLISION:                              # More than one PICC in the field => collision.
+                        logger_debug.warn(_F('No back data received from transceive_data in picc_select anti collision loop. buffer: [{}], used: {}, tx_last_bits: {}, rx_align: {}', format_hex(
+                            _buffer), buffer_used, tx_last_bits, rx_align))
+
+                # More than one PICC in the field => collision.
+                if status == StatusCode.STATUS_COLLISION:
                     if self.__log_trace:
-                        logger_trace.debug('>> picc_select: cascade loop iteration: anti collision loop iteration: more than one PICC in field --> collision')
-                    value_of_col_reg = self.pcd_read_register(PCD_Register.CollReg)  # CollReg[7..0] bits are: ValuesAfterColl reserved CollPosNotValid CollPos[4:0]
+                        logger_trace.debug(
+                            '>> picc_select: cascade loop iteration: anti collision loop iteration: more than one PICC in field --> collision')
+                    # CollReg[7..0] bits are: ValuesAfterColl reserved
+                    # CollPosNotValid CollPos[4:0]
+                    value_of_col_reg = self.pcd_read_register(
+                        PCD_Register.CollReg)
                     if value_of_col_reg & 0x20:                                             # CollPosNotValid
                         if self.__log_debug:
-                            logger_debug.error('Error occured in picc_select anti collision loop. Invalid collision position')
-                        return StatusCode.STATUS_COLLISION, _uid                       # Without a valid collision position we cannot continue
-                    collision_pos = value_of_col_reg & 0x1F                                 # Values 0-31, 0 means bit 32.
+                            logger_debug.error(
+                                'Error occured in picc_select anti collision loop. Invalid collision position')
+                        # Without a valid collision position we cannot continue
+                        return StatusCode.STATUS_COLLISION, _uid
+                    # Values 0-31, 0 means bit 32.
+                    collision_pos = value_of_col_reg & 0x1F
                     if collision_pos == 0:
                         collision_pos = 32
-                    if collision_pos <= current_level_known_bits:                          # No progress - should not happen 
+                    if collision_pos <= current_level_known_bits:                          # No progress - should not happen
                         if self.__log_debug:
-                            logger_debug.error(_F('Error occured in picc_select anti collision loop. No progress collision_pos ({}) < current_level_known_bits ({})', collision_pos, current_level_known_bits))
+                            logger_debug.error(
+                                _F('Error occured in picc_select anti collision loop. No progress collision_pos ({}) < current_level_known_bits ({})', collision_pos, current_level_known_bits))
                         return StatusCode.STATUS_INTERNAL_ERROR, _uid
                     # Choose the PICC with the bit set.
-                    current_level_known_bits    = collision_pos
-                    count                       = current_level_known_bits % 8                              # The bit to modify
-                    check_bit                   = (current_level_known_bits - 1) % 8
-                    index                       = 1 + (current_level_known_bits // 8) + (1 if count else 0) # First byte is index 0.
-                    _buffer[index]              |= (1 << check_bit)
+                    current_level_known_bits = collision_pos
+                    # The bit to modify
+                    count = current_level_known_bits % 8
+                    check_bit = (current_level_known_bits - 1) % 8
+                    # First byte is index 0.
+                    index = 1 + (current_level_known_bits // 8) + \
+                        (1 if count else 0)
+                    _buffer[index] |= (1 << check_bit)
                 elif status != StatusCode.STATUS_OK:
                     if self.__log_debug:
-                        logger_debug.error(_F('Error occured in picc_select anti collision loop. pcd_transceive_data returned NOT OK ({})', status.name))
+                        logger_debug.error(
+                            _F('Error occured in picc_select anti collision loop. pcd_transceive_data returned NOT OK ({})', status.name))
                     return status, _uid
                 else:                                                                       # STATUS_OK
                     if self.__log_trace:
-                        logger_trace.debug('>> picc_select: cascade loop iteration: anti collision loop iteration: status OK')
-                    if current_level_known_bits >= 32:                                      # This was a SELECT.
-                        select_done = True                                                  # No more anticollision 
+                        logger_trace.debug(
+                            '>> picc_select: cascade loop iteration: anti collision loop iteration: status OK')
+                    # This was a SELECT.
+                    if current_level_known_bits >= 32:
+                        # No more anticollision
+                        select_done = True
                         # We continue below outside the while.
-                    else:                                                                   # This was an ANTICOLLISION.
-                        # We now have all 32 bits of the UID in this Cascade Level
+                    # This was an ANTICOLLISION.
+                    else:
+                        # We now have all 32 bits of the UID in this Cascade
+                        # Level
                         current_level_known_bits = 32
                         # Run loop again to do the SELECT.
             # End of while (!selectDone)
-    
+
             # We do not check the CBB - it was constructed by us above.
-    
+
             # Copy the found UID bytes from _buffer[] to uid->uidByte[]
-            index            = 3 if _buffer[2] == PICC_Command.PICC_CMD_CT.value else 2       # source index in _buffer[]
-            bytes_to_copy    = 3 if _buffer[2] == PICC_Command.PICC_CMD_CT.value else 4
+            # source index in _buffer[]
+            index = 3 if _buffer[2] == PICC_Command.PICC_CMD_CT.value else 2
+            bytes_to_copy = 3 if _buffer[2] == PICC_Command.PICC_CMD_CT.value else 4
             for count in range(bytes_to_copy):
                 _uid.uid_byte[uid_index + count] = _buffer[index]
                 index += 1
-            
+
             if self.__log_trace:
-                logger_trace.debug('>> picc_select: cascade loop iteration: check response SAK and verify CRC_A')
-            
+                logger_trace.debug(
+                    '>> picc_select: cascade loop iteration: check response SAK and verify CRC_A')
+
             # Check response SAK (Select Acknowledge)
-            if response_length != 3 or tx_last_bits != 0:                                   # SAK must be exactly 24 bits (1 byte + CRC_A).
+            # SAK must be exactly 24 bits (1 byte + CRC_A).
+            if response_length != 3 or tx_last_bits != 0:
                 if self.__log_debug:
-                    logger_debug.error(_F('Error occured in picc_select cascade loop. Response SAK (Select Acknowledge) is not exactly 24 bits (SAK bits: {}, SAK valid last bits: {})', response_length * 8, tx_last_bits))
+                    logger_debug.error(
+                        _F('Error occured in picc_select cascade loop. Response SAK (Select Acknowledge) is not exactly 24 bits (SAK bits: {}, SAK valid last bits: {})', response_length * 8, tx_last_bits))
                 return StatusCode.STATUS_ERROR, _uid
-            # Verify CRC_A - do our own calculation and store the control in _buffer[2..3] - those bytes are not needed anymore.
-            status, crc_result = self.pcd_calulate_crc(_rx_back_data[:1])     #responseBuffer, 1, &_buffer[2]);
+            # Verify CRC_A - do our own calculation and store the control in
+            # _buffer[2..3] - those bytes are not needed anymore.
+            status, crc_result = self.pcd_calulate_crc(
+                _rx_back_data[:1])  # responseBuffer, 1, &_buffer[2]);
             if status != StatusCode.STATUS_OK:
                 if self.__log_debug:
-                    logger_debug.error(_F('Error occured in picc_select cascade loop. CRC_A calculation returned NOT OK ({})', status.name))
+                    logger_debug.error(
+                        _F('Error occured in picc_select cascade loop. CRC_A calculation returned NOT OK ({})', status.name))
                 return status, _uid
             _buffer[2] = crc_result[0]
             _buffer[3] = crc_result[1]
             if ((_buffer[2] != _buffer[response_buffer_index + 1]) or (_buffer[3] != _buffer[response_buffer_index + 2])):
                 if self.__log_debug:
-                    logger_debug.error('Error occured in picc_select cascade loop. Wrong CRC_A')
+                    logger_debug.error(
+                        'Error occured in picc_select cascade loop. Wrong CRC_A')
                 return StatusCode.STATUS_CRC_WRONG, _uid
-            if (_buffer[response_buffer_index] & 0x04):                                      # Cascade bit set - UID not complete yes
+            # Cascade bit set - UID not complete yes
+            if (_buffer[response_buffer_index] & 0x04):
                 cascade_level += 1
             else:
                 uid_complete = True
                 _uid.sak = _buffer[response_buffer_index]
         # End of while (!uidComplete)
-        
+
         # Set correct uid->size
         _uid.size = 3 * cascade_level + 1
-        
+
         if self.__log_trace:
-            logger_trace.debug(_F('>> picc_select: cascade loop finished: uid: [{}]', format_hex(_uid.uid())))
-    
+            logger_trace.debug(
+                _F('>> picc_select: cascade loop finished: uid: [{}]', format_hex(_uid.uid())))
+
         return StatusCode.STATUS_OK, _uid
     # End PICC_Select()
 
@@ -1452,17 +1639,17 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_halt_a')
-        
+
         # Build command buffer
         _buffer = []
         _buffer.append(PICC_Command.PICC_CMD_HLTA.value)
         _buffer.append(0)
-        
+
         # Calculate CRC_A
         result, crc_result = self.pcd_calulate_crc(_buffer)
         if result != StatusCode.STATUS_OK:
             return result
-    
+
         # Send the command.
         # The standard says:
         #        If the PICC responds with any modulation during a period of 1 ms after the end of the frame containing the
@@ -1475,10 +1662,9 @@ class MFRC522(object):
             return StatusCode.STATUS_ERROR
         return result
 
-
-    #====================================================================================
+    #=========================================================================
     # Functions for communicating with MIFARE PICCs
-    #====================================================================================
+    #=========================================================================
 
     def pcd_authenticate(self, command, block_addr, key, uid):
         '''
@@ -1499,24 +1685,25 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_authenticate')
-        
+
         wait_irq = 0x10        # IdleIRq
-    
+
         # Build command buffer
         send_data = [0] * 12
         send_data[0] = command.value
         send_data[1] = block_addr
         for i in range(MIFARE_Misc.MF_KEY_SIZE.value):   # 6 key bytes
-            send_data[2+i] = key.key_byte[i]
+            send_data[2 + i] = key.key_byte[i]
         # Use the last uid bytes as specified in http://cache.nxp.com/documents/application_note/AN10927.pdf
         # section 3.2.5 "MIFARE Classic Authentication".
         # The only missed case is the MF1Sxxxx shortcut activation,
         # but it requires cascade tag (CT) byte, that is not part of uid.
         for i in range(4):                              # The last 4 bytes of the UID
-            send_data[8+i] = uid.uid_byte[i+uid.size-4]
-    
+            send_data[8 + i] = uid.uid_byte[i + uid.size - 4]
+
         # Start the authentication.
-        status, __, __ = self.pcd_communicate_with_picc(PCD_Command.PCD_MFAuthent, wait_irq, send_data, False, 0)
+        status, __, __ = self.pcd_communicate_with_picc(
+            PCD_Command.PCD_MFAuthent, wait_irq, send_data, False, 0)
         return status
 
     def pcd_stop_crypto1(self):
@@ -1526,9 +1713,11 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_stop_crypto1')
-        
+
         # Clear MFCrypto1On bit
-        self.pcd_clear_register_bitmask(PCD_Register.Status2Reg, 0x08)  # Status2Reg[7..0] bits are: TempSensClear I2CForceHS reserved reserved MFCrypto1On ModemState[2:0]
+        # Status2Reg[7..0] bits are: TempSensClear I2CForceHS reserved reserved
+        # MFCrypto1On ModemState[2:0]
+        self.pcd_clear_register_bitmask(PCD_Register.Status2Reg, 0x08)
 
     def mifare_read(self, block_addr):
         '''
@@ -1549,7 +1738,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_read')
-        
+
         # Build command buffer
         _buffer = []
         _buffer.append(PICC_Command.PICC_CMD_MF_READ.value)
@@ -1558,9 +1747,10 @@ class MFRC522(object):
         result, crc_result = self.pcd_calulate_crc(_buffer)
         if result != StatusCode.STATUS_OK:
             return result
-    
+
         # Transmit the buffer and receive the response, validate CRC_A.
-        status, data, __ = self.pcd_transceive_data(_buffer + crc_result, True, 0, 0, True)
+        status, data, __ = self.pcd_transceive_data(
+            _buffer + crc_result, True, 0, 0, True)
         return status, data
 
     def mifare_write(self, block_addr, data):
@@ -1579,27 +1769,30 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_write')
-        
+
         # Sanity check
         if not data or len(data) < 16:
             if self.__log_debug:
-                logger_debug.error(_F('Invalid number of bytes (< 16) for mifare_write. Data (n={}): [{}]', len(data), format_hex(data)))
+                logger_debug.error(_F('Invalid number of bytes (< 16) for mifare_write. Data (n={}): [{}]', len(
+                    data), format_hex(data)))
             return StatusCode.STATUS_INVALID
-    
+
         # Mifare Classic protocol requires two communications to perform a write.
         # Step 1: Tell the PICC we want to write to block blockAddr.
         _cmd_buffer = []
         _cmd_buffer.append(PICC_Command.PICC_CMD_MF_WRITE.value)
         _cmd_buffer.append(block_addr)
-        result = self.pcd_mifare_transceive(_cmd_buffer)                         # Adds CRC_A and checks that the response is MF_ACK.
+        # Adds CRC_A and checks that the response is MF_ACK.
+        result = self.pcd_mifare_transceive(_cmd_buffer)
         if result != StatusCode.STATUS_OK:
             return result
-    
+
         # Step 2: Transfer the data
-        result = self.pcd_mifare_transceive(data)                                # Adds CRC_A and checks that the response is MF_ACK.
+        # Adds CRC_A and checks that the response is MF_ACK.
+        result = self.pcd_mifare_transceive(data)
         if result != StatusCode.STATUS_OK:
             return result
-        
+
         return StatusCode.STATUS_OK
 
     def mifare_ultralight_write(self, page, data):
@@ -1612,22 +1805,23 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_ultralight_write')
-        
+
         # Sanity check
         if not data or len(data) < 4:
             return StatusCode.STATUS_INVALID
-    
+
         # Build commmand buffer
         _cmd_buffer = []
         _cmd_buffer.append(PICC_Command.PICC_CMD_UL_WRITE.value)
         _cmd_buffer.append(page)
         _cmd_buffer += data[:4]
-    
+
         # Perform the write
-        result = self.pcd_mifare_transceive(_cmd_buffer)                         # Adds CRC_A and checks that the response is MF_ACK.
+        # Adds CRC_A and checks that the response is MF_ACK.
+        result = self.pcd_mifare_transceive(_cmd_buffer)
         if result != StatusCode.STATUS_OK:
             return result
-        
+
         return StatusCode.STATUS_OK
 
     def mifare_decrement(self, block_addr, delta):
@@ -1643,7 +1837,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_decrement')
-        
+
         return self._mifare_two_step_helper(PICC_Command.PICC_CMD_MF_DECREMENT, block_addr, delta)
 
     def mifare_increment(self, block_addr, delta):
@@ -1659,7 +1853,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_increment')
-        
+
         return self._mifare_two_step_helper(PICC_Command.PICC_CMD_MF_INCREMENT, block_addr, delta)
 
     def mifare_restore(self, block_addr):
@@ -1674,9 +1868,10 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_restore')
-        
+
         # The datasheet describes Restore as a two step operation, but does not explain what data to transfer in step 2.
-        # Doing only a single step does not work, so I chose to transfer 0L in step two.
+        # Doing only a single step does not work, so I chose to transfer 0L in
+        # step two.
         return self._mifare_two_step_helper(PICC_Command.PICC_CMD_MF_RESTORE, block_addr, 0)
     
     def _mifare_two_step_helper(self, command, block_addr, data):
@@ -1690,20 +1885,22 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_two_step_helper')
-        
+
         # Step 1: Tell the PICC the command and block address
         _cmd_buffer = []
         _cmd_buffer.append(command.value)
         _cmd_buffer.append(block_addr)
-        result = self.pcd_mifare_transceive(_cmd_buffer)  # Adds CRC_A and checks that the response is MF_ACK.
+        # Adds CRC_A and checks that the response is MF_ACK.
+        result = self.pcd_mifare_transceive(_cmd_buffer)
         if result != StatusCode.STATUS_OK:
             return result
-    
+
         # Step 2: Transfer the data
-        result = self.pcd_mifare_transceive(data, True)   # Adds CRC_A and accept timeout as success.
+        # Adds CRC_A and accept timeout as success.
+        result = self.pcd_mifare_transceive(data, True)
         if result != StatusCode.STATUS_OK:
             return result
-    
+
         return StatusCode.STATUS_OK
 
     def mifare_transfer(self, block_addr):
@@ -1717,13 +1914,14 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_transfer')
-        
+
         _cmd_buffer = []                # We only need room for 2 bytes.
-    
+
         # Tell the PICC we want to transfer the result into block blockAddr.
         _cmd_buffer.append(PICC_Command.PICC_CMD_MF_TRANSFER.value)
         _cmd_buffer.append(block_addr)
-        result = self.pcd_mifare_transceive(_cmd_buffer)  # Adds CRC_A and checks that the response is MF_ACK.
+        # Adds CRC_A and checks that the response is MF_ACK.
+        result = self.pcd_mifare_transceive(_cmd_buffer)
         if result != StatusCode.STATUS_OK:
             return result
         return StatusCode.STATUS_OK
@@ -1742,12 +1940,13 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_get_value')
-        
+
         # Read the block
         status, data = self.mifare_read(block_addr)
         if status == StatusCode.STATUS_OK:
             # Extract the value
-            value = (data[3] << 24) | (data[2] << 16) | (data[1] << 8) | data[0]
+            value = (data[3] << 24) | (
+                data[2] << 16) | (data[1] << 8) | data[0]
             return StatusCode.STATUS_OK, value
         return status, None
 
@@ -1765,11 +1964,11 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> mifare_set_value')
-        
+
         # Translate the int32_t into 4 bytes; repeated 2x in value block
         _buffer = [0] * 16
-        _buffer[0] = _buffer[ 8] = (value & 0xFF)
-        _buffer[1] = _buffer[ 9] = (value & 0xFF00) >> 8
+        _buffer[0] = _buffer[8] = (value & 0xFF)
+        _buffer[1] = _buffer[9] = (value & 0xFF00) >> 8
         _buffer[2] = _buffer[10] = (value & 0xFF0000) >> 16
         _buffer[3] = _buffer[11] = (value & 0xFF000000) >> 24
         # Inverse 4 bytes also found in value block
@@ -1780,17 +1979,17 @@ class MFRC522(object):
         # Address 2x with inverse address 2x
         _buffer[12] = _buffer[14] = block_addr
         _buffer[13] = _buffer[15] = ~block_addr
-    
+
         # Write the whole data block
         return self.mifare_write(block_addr, _buffer)
 
+    # TODO missing function: MFRC522::StatusCode
+    # MFRC522::PCD_NTAG216_AUTH(byte* passWord, byte pACK[]) //Authenticate
+    # with 32bit password
 
-    # TODO missing function: MFRC522::StatusCode MFRC522::PCD_NTAG216_AUTH(byte* passWord, byte pACK[]) //Authenticate with 32bit password
-
-
-    #====================================================================================
+    #=========================================================================
     # Support functions
-    #====================================================================================
+    #=========================================================================
 
     def pcd_mifare_transceive(self, send_data, accept_timeout=False):
         '''
@@ -1803,22 +2002,24 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_mifare_transceive')
-        
-        _cmd_buffer = [0] * 18      # We need room for 16 bytes data and 2 bytes CRC_A.
-    
+
+        # We need room for 16 bytes data and 2 bytes CRC_A.
+        _cmd_buffer = [0] * 18
+
         # Sanity check
         if not send_data or len(send_data) > 16:
             return StatusCode.STATUS_INVALID
-    
+
         # Copy sendData[] to cmdBuffer[] and add CRC_A
         #memcpy(cmdBuffer, sendData, sendLen);
         result, crc_result = self.pcd_calulate_crc(send_data)
-        if result != StatusCode.STATUS_OK: 
+        if result != StatusCode.STATUS_OK:
             return result
-        
+
         # Transceive the data, store the reply in cmdBuffer[]
-        wait_irq = 0x30             # RxIRq and IdleIRq
-        result, rx_back_data, rx_valid_bits = self.pcd_communicate_with_picc(PCD_Command.PCD_Transceive, wait_irq, send_data + crc_result, True, 0)
+        wait_irq = 0x30 # RxIRq and IdleIRq
+        result, rx_back_data, rx_valid_bits = self.pcd_communicate_with_picc(
+            PCD_Command.PCD_Transceive, wait_irq, send_data + crc_result, True, 0)
         if accept_timeout and result == StatusCode.STATUS_TIMEOUT:
             return StatusCode.STATUS_OK
         if result != StatusCode.STATUS_OK:
@@ -1826,11 +2027,13 @@ class MFRC522(object):
         # The PICC must reply with a 4 bit ACK
         if len(rx_back_data) != 1 or rx_valid_bits != 4:
             if self.__log_debug:
-                logger_debug.error('Invalid ACK received from PICC in mifare transceive')
+                logger_debug.error(
+                    'Invalid ACK received from PICC in mifare transceive')
             return StatusCode.STATUS_ERROR
         if rx_back_data[0] != MIFARE_Misc.MF_ACK.value:
             if self.__log_debug:
-                logger_debug.warn('Received NAK from PICC in mifare transceive')
+                logger_debug.warn(
+                    'Received NAK from PICC in mifare transceive')
             return StatusCode.STATUS_MIFARE_NACK
         return StatusCode.STATUS_OK
 
@@ -1875,7 +2078,7 @@ class MFRC522(object):
             return 'counterfeit chip'
         else:
             return '(unknown)'
-    
+
     def pcd_dump_version_to_serial(self):
         '''
         Dumps debug info about the connected PCD to Serial.
@@ -1883,10 +2086,11 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_dump_version_to_serial')
-        
+
         # Get the MFRC522 firmware version
         v = self.pcd_read_register(PCD_Register.VersionReg)
-        print('Firmware Version: {:#x} = {}'.format(v, self.pcd_get_version_name(v)))
+        print('Firmware Version: {:#x} = {}'.format(
+            v, self.pcd_get_version_name(v)))
         # When 0x00 or 0xFF is returned, communication probably failed
         if (v == 0x00) or (v == 0xFF):
             print('WARNING: Communication failure, is the MFRC522 properly connected?')
@@ -1902,18 +2106,19 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_dump_to_serial')
-        
+
         key = MIFARE_Key()
-        
+
         # Dump UID, SAK and Type
         self.picc_dump_details_to_serial(uid)
-    
+
         # Dump contents
         picc_type = uid.get_picc_type()
         if (picc_type == PICC_Type.PICC_TYPE_MIFARE_MINI
                 or picc_type == PICC_Type.PICC_TYPE_MIFARE_1K
                 or picc_type == PICC_Type.PICC_TYPE_MIFARE_4K):
-            # All keys are set to FFFFFFFFFFFFh at chip delivery from the factory.
+            # All keys are set to FFFFFFFFFFFFh at chip delivery from the
+            # factory.
             for i in range(6):
                 key.key_byte[i] = 0xFF
             self.picc_dump_mifare_classic_to_serial(uid, picc_type, key)
@@ -1926,9 +2131,11 @@ class MFRC522(object):
                 or picc_type == PICC_Type.PICC_TYPE_TNP3XXX):
             print('Dumping memory contents not implemented for that PICC type.')
         else:
-            pass    # No memory dump here
-    
-        self.picc_halt_a()    # Already done if it was a MIFARE Classic PICC.
+            # No memory dump here
+            pass
+
+        # Already done if it was a MIFARE Classic PICC.
+        self.picc_halt_a()
 
     def picc_dump_details_to_serial(self, uid):
         '''
@@ -1939,13 +2146,13 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_dump_details_to_serial')
-        
+
         # UID
         print('Card UID:     [{}]'.format(format_hex(uid.uid())))
 
         # SAK
         print('Card SAK:     {:#04x}'.format(uid.sak))
-    
+
         # (suggested) PICC type
         picc_type = uid.get_picc_type()
         print('PICC type:    {}'.format(self.picc_get_type_name(picc_type)))
@@ -1961,7 +2168,7 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_dump_mifare_classic_to_serial')
-        
+
         no_of_sectors = 0
         if picc_type == PICC_Type.PICC_TYPE_MIFARE_MINI:
             # Has 5 sectors * 4 blocks/sector * 16 bytes/block = 320 bytes.
@@ -1970,18 +2177,21 @@ class MFRC522(object):
             # Has 16 sectors * 4 blocks/sector * 16 bytes/block = 1024 bytes.
             no_of_sectors = 16
         elif picc_type == PICC_Type.PICC_TYPE_MIFARE_4K:
-            # Has (32 sectors * 4 blocks/sector + 8 sectors * 16 blocks/sector) * 16 bytes/block = 4096 bytes.
+            # Has (32 sectors * 4 blocks/sector + 8 sectors * 16 blocks/sector)
+            # * 16 bytes/block = 4096 bytes.
             no_of_sectors = 40
         else:
-            pass    # Should not happen. Ignore.
-    
+            # Should not happen. Ignore.
+            pass
+
         # Dump sectors, highest address first.
         if no_of_sectors > 0:
             print('Sector Block     0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15  AccessBits')
             for i in range(no_of_sectors):
                 self.picc_dump_mifare_classic_sector_to_serial(uid, key, i)
-        
-        self.picc_halt_a()    # Halt the PICC before stopping the encrypted session.
+
+        # Halt the PICC before stopping the encrypted session.
+        self.picc_halt_a()
         self.pcd_stop_crypto1()
 
     def picc_dump_mifare_classic_sector_to_serial(self, uid, key, sector):
@@ -1996,10 +2206,12 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_dump_mifare_classic_sector_to_serial')
-        
-        first_block = 0             # Address of lowest address to dump actually last block dumped)
-        no_of_blocks = 0            # Number of blocks in sector
-    
+
+        # Address of lowest address to dump actually last block dumped)
+        first_block = 0
+        # Number of blocks in sector
+        no_of_blocks = 0
+
         # The access bits are stored in a peculiar fashion.
         # There are four groups:
         #        g[3]    Access bits for the sector trailer, block 3 (for sectors 0-31) or block 15 (for sectors 32-39)
@@ -2007,13 +2219,15 @@ class MFRC522(object):
         #        g[1]    Access bits for block 1 (for sectors 0-31) or blocks 5-9 (for sectors 32-39)
         #        g[0]    Access bits for block 0 (for sectors 0-31) or blocks 0-4 (for sectors 32-39)
         # Each group has access bits [C1 C2 C3]. In this code C1 is MSB and C3 is LSB.
-        # The four CX bits are stored together in a nible cx and an inverted nible cx_.
-        
+        # The four CX bits are stored together in a nible cx and an inverted
+        # nible cx_.
+
         #byte c1_, c2_, c3_;        # Inverted nibbles
         g = [0] * 4                # Access bits for each of the four groups.
         #byte group;               # 0-3 - active group for access bits
-        #bool firstInGroup;        # True for the first block dumped in the group
-    
+        # bool firstInGroup;        # True for the first block dumped in the
+        # group
+
         # Determine position and size of sector.
         if sector < 32:                             # Sectors 0..31 has 4 blocks each
             no_of_blocks = 4
@@ -2021,38 +2235,47 @@ class MFRC522(object):
         elif sector < 40:                           # Sectors 32-39 has 16 blocks each
             no_of_blocks = 16
             first_block = 128 + (sector - 32) * no_of_blocks
-        else:                                       # Illegal input, no MIFARE Classic PICC has more than 40 sectors.
+        # Illegal input, no MIFARE Classic PICC has more than 40 sectors.
+        else:
             return
-        
+
         # Establish encrypted communications before reading the first block
-        status = self.pcd_authenticate(PICC_Command.PICC_CMD_MF_AUTH_KEY_A, first_block, key, uid)
+        status = self.pcd_authenticate(
+            PICC_Command.PICC_CMD_MF_AUTH_KEY_A, first_block, key, uid)
         if status != StatusCode.STATUS_OK:
             print('PCD_Authenticate() failed: ')
             print(self.get_status_code_name(status))
             return
-        
+
         # Dump blocks, highest address first.
         block_addr = None
-        is_sector_trailer = True    # Set to true while handling the "last" (ie highest address) in the sector.
+        # Set to true while handling the "last" (ie highest address) in the
+        # sector.
+        is_sector_trailer = True
         inverted_error = False      # True if one of the inverted nibbles did not match
-        for block_offset in range(no_of_blocks - 1, -1, -1):     # for (int8_t blockOffset = no_of_blocks - 1; blockOffset >= 0; blockOffset--) {
+        # for (int8_t blockOffset = no_of_blocks - 1; blockOffset >= 0;
+        # blockOffset--) {
+        for block_offset in range(no_of_blocks - 1, -1, -1):
             block_addr = first_block + block_offset
-            
+
             # Read block
-            status, data = self.mifare_read(block_addr)         # MIFARE_Read(blockAddr, buffer, &byteCount);
+            # MIFARE_Read(blockAddr, buffer, &byteCount);
+            status, data = self.mifare_read(block_addr)
             if status != StatusCode.STATUS_OK:
-                print('MIFARE_Read() failed: {}'.format(self.get_status_code_name(status)))
+                print('MIFARE_Read() failed: {}'.format(
+                    self.get_status_code_name(status)))
                 continue
-            
+
             # Parse sector trailer data
             if is_sector_trailer:
-                c1  = data[7] >> 4
-                c2  = data[8] & 0xF
-                c3  = data[8] >> 4
+                c1 = data[7] >> 4
+                c2 = data[8] & 0xF
+                c3 = data[8] >> 4
                 c1_ = data[6] & 0xF
                 c2_ = data[6] >> 4
                 c3_ = data[7] & 0xF
-                inverted_error = (c1 != (~c1_ & 0xF)) or (c2 != (~c2_ & 0xF)) or (c3 != (~c3_ & 0xF))
+                inverted_error = (c1 != (~c1_ & 0xF)) or (
+                    c2 != (~c2_ & 0xF)) or (c3 != (~c3_ & 0xF))
                 g[0] = ((c1 & 1) << 2) | ((c2 & 1) << 1) | ((c3 & 1) << 0)
                 g[1] = ((c1 & 2) << 1) | ((c2 & 2) << 0) | ((c3 & 2) >> 1)
                 g[2] = ((c1 & 4) << 0) | ((c2 & 4) >> 1) | ((c3 & 4) >> 2)
@@ -2061,36 +2284,40 @@ class MFRC522(object):
                 _sector = sector
             else:
                 _sector = ''
-    
+
             # Which access group is this block in?
             if no_of_blocks == 4:
                 group = block_offset
                 first_in_group = True
             else:
                 group = block_offset // 5
-                first_in_group = (group == 3) or (group != (block_offset + 1) // 5)
-    
+                first_in_group = (group == 3) or (
+                    group != (block_offset + 1) // 5)
+
             if first_in_group:
                 # Print access bits
-                accessbits = '[{} {} {}] {} '.format((g[group] >> 2) & 1, (g[group] >> 1) & 1, (g[group] >> 0) & 1, ' Inverted access bits did not match! ' if inverted_error else '')
+                accessbits = '[{} {} {}] {} '.format((g[group] >> 2) & 1, (g[group] >> 1) & 1, (
+                    g[group] >> 0) & 1, ' Inverted access bits did not match! ' if inverted_error else '')
             else:
                 accessbits = ''
-    
-            if (group != 3 and (g[group] == 1 or g[group] == 6)):   # Not a sector trailer, a value block
-                value = (data[3]<<24) | (data[2]<<16) | (data[1]<<8) | data[0]
+
+            # Not a sector trailer, a value block
+            if (group != 3 and (g[group] == 1 or g[group] == 6)):
+                value = (data[3] << 24) | (
+                    data[2] << 16) | (data[1] << 8) | data[0]
                 valaddr = 'Value={:#04x} Adr={:#04x} '.format(value, data[12])
             else:
                 valaddr = ''
-            
+
             # Dump data
             # Sector number - only on first line
             print('{sector:>6} {block:>5}  {vals}  {accessbits}{valaddr}'.format(
-                sector=_sector, 
-                block=block_addr, 
+                sector=_sector,
+                block=block_addr,
                 vals=format_hex(data[:16]),
                 accessbits=accessbits,
                 valaddr=valaddr))
-        
+
         # End PICC_DumpMifareClassicSectorToSerial()
 
     def picc_dump_mifare_ultralight_to_serial(self):
@@ -2099,10 +2326,12 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_dump_mifare_ultralight_to_serial')
-        
+
         print('Page     0     1     2     3')
-        # Try the mpages of the original Ultralight. Ultralight C has more pages.
-        for page in range(0, 16, 4):    # Read returns data for 4 pages at a time.
+        # Try the mpages of the original Ultralight. Ultralight C has more
+        # pages.
+        # Read returns data for 4 pages at a time.
+        for page in range(0, 16, 4):
             # Read pages
             status, data = self.mifare_read(page)
             if status != StatusCode.STATUS_OK:
@@ -2114,15 +2343,15 @@ class MFRC522(object):
                 i = page + offset
                 start = offset * 4
                 end = start + 4
-                print('{page:>4}  {vals}'.format(page=i,vals=format_hex(data[start:end])))
+                print('{page:>4}  {vals}'.format(
+                    page=i, vals=format_hex(data[start:end])))
 
 
     # TODO missing functions
 
-
-    #====================================================================================
+    #=========================================================================
     # Convenience functions - does not add extra functionality
-    #====================================================================================
+    #=========================================================================
 
     def picc_is_new_card_present(self):
         '''
@@ -2133,13 +2362,13 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_is_new_card_present')
-        
+
         # Reset baud rates
         self.pcd_write_register(PCD_Register.TxModeReg, 0x00)
         self.pcd_write_register(PCD_Register.RxModeReg, 0x00)
         # Reset ModWidthReg
         self.pcd_write_register(PCD_Register.ModWidthReg, 0x26)
-    
+
         result, __ = self.picc_request_a()
         return result == StatusCode.STATUS_OK or result == StatusCode.STATUS_COLLISION
 
@@ -2152,13 +2381,13 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_is_new_card_present')
-        
+
         # Reset baud rates
         self.pcd_write_register(PCD_Register.TxModeReg, 0x00)
         self.pcd_write_register(PCD_Register.RxModeReg, 0x00)
         # Reset ModWidthReg
         self.pcd_write_register(PCD_Register.ModWidthReg, 0x26)
-    
+
         result, __ = self.picc_wakeup_a()
         return result == StatusCode.STATUS_OK or result == StatusCode.STATUS_COLLISION
 
@@ -2173,16 +2402,16 @@ class MFRC522(object):
         '''
         if self.__log_trace:
             logger_trace.debug('>> picc_read_card_serial')
-        
+
         result, uid = self.picc_select()
         return result == StatusCode.STATUS_OK, uid
 
 
-
-#====================================================================================
+#=========================================================================
 # Helper functions for the python version of MFRC522
-#====================================================================================
+#=========================================================================
+
 
 # Helper function to suspend executen for x microsecends
-usleep = lambda x: sleep(x/1000000.0)
+def usleep(x): return sleep(x / 1000000.0)
 

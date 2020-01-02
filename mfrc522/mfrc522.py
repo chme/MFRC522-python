@@ -133,10 +133,9 @@ logger_trace = logging.getLogger('mfrc522.trace')
 logger_spi = logging.getLogger('mfrc522.spi')
 
 
-
-#====================================================================================
+#=========================================================================
 # Enum definitions
-#====================================================================================
+#=========================================================================
 
 
 class ValueDescriptionEnum(Enum):
@@ -355,7 +354,7 @@ class PICC_Type(ValueDescriptionEnum):
     def get_name(self):
         '''
         Returns the PICC type name.
-        
+
         @return: PICC type name
         '''
         return self.description
@@ -387,7 +386,7 @@ class PICC_Type(ValueDescriptionEnum):
         '''
         Returns the trailer block address, the block address for the first data block and the data block count
         for the given sector.
-        
+
         @param sector: The sector number
         @return: (irst data block, sector trailer block, fdata block count)
         '''
@@ -443,7 +442,7 @@ class StatusCode(ValueDescriptionEnum):
     def get_name(self):
         '''
         Returns the status code name.
-        
+
         @return:  StatusCode name
         '''
         return self.description
@@ -483,7 +482,7 @@ class Uid(object):
     def get_picc_type(self):
         '''
         Translates the SAK (Select Acknowledge) to a PICC type.
-        
+
         @param sak: The SAK byte returned from PICC_Select().
         @return: PICC_Type
         '''
@@ -524,7 +523,8 @@ class MIFARE_Key(object):
     '''
     A struct used for passing a MIFARE Crypto1 key
     '''
-    # A Mifare Crypto1 key is 6 bytes. All keys are set to FFFFFFFFFFFFh at chip delivery from the factory.
+    # A Mifare Crypto1 key is 6 bytes. All keys are set to FFFFFFFFFFFFh at
+    # chip delivery from the factory.
     key_byte = [0xFF] * 6
 
     def __str__(self):
@@ -593,7 +593,7 @@ class MFRC522(object):
     def __init__(self, bus=0, device=0, speed=1000000, pin_reset=25, pin_ce=0, pin_irq=24, pin_mode=GPIO.BCM):
         '''
         Create a new MFRC522 instance
-        
+
         @param bus: The SPI bus (default = 0)
         @param device: The SPI device (default = 0)
         @param speed: The max speed in Hz for the SPI device (default = 1000000)
@@ -623,7 +623,7 @@ class MFRC522(object):
     def _spi_transfer(self, data):
         '''
         Transfer data from and to the pcd
-        
+
         @param data: List of bytes to write to the pcd
         @return: List of bytes read from the pcd
         '''
@@ -644,7 +644,7 @@ class MFRC522(object):
         '''
         Writes a byte to the specified register in the MFRC522 chip.
         The interface is described in the datasheet section 8.1.2.
-        
+
         @param reg: The register to write to. One of the PCD_Register enums
         @param val: The value to write
         '''
@@ -658,7 +658,7 @@ class MFRC522(object):
         '''
         Writes a list of bytes to the specified register in the MFRC522 chip.
         The interface is described in the datasheet section 8.1.2.
-        
+
         @param reg: The register to write to. One of the PCD_Register enums
         @param vals: The list of values to write
         '''
@@ -672,7 +672,7 @@ class MFRC522(object):
         '''
         Reads a byte from the specified register in the MFRC522 chip.
         The interface is described in the datasheet section 8.1.2.
-        
+
         @param reg: The register to read from. One of the PCD_Register enums
         @return: The byte value read from the register
         '''
@@ -690,7 +690,7 @@ class MFRC522(object):
         '''
         Reads a number of bytes from the specified register in the MFRC522 chip.
         The interface is described in the datasheet section 8.1.2.
-        
+
         @param reg: The register to read from. One of the PCD_Register enums
         @param count: The number of bytes to read
         @param rx_align: Only bit positions rxAlign..7 in values[0] are updated.
@@ -746,7 +746,7 @@ class MFRC522(object):
     def pcd_set_register_bitmask(self, reg, mask):
         '''
         Sets the bits given in mask in register reg..
-        
+
         @param reg: The register to update. One of the PCD_Register enums
         @param mask: he bits to set
         '''
@@ -756,7 +756,7 @@ class MFRC522(object):
     def pcd_clear_register_bitmask(self, reg, mask):
         '''
         Clears the bits given in mask from register reg.
-        
+
         @param reg: The register to update. One of the PCD_Register enums
         @param mask: The bits to clear
         '''
@@ -766,9 +766,9 @@ class MFRC522(object):
     def pcd_calulate_crc(self, data):
         '''
         Use the CRC coprocessor in the MFRC522 to calculate a CRC_A.
-        
+
         Returns STATUS_OK on success, STATUS_TIMEOUT if the CRC calculation did not complete in time (communication with the MFRC522 might be down)
-        
+
         @param data: The data to transfer to the FIFO for CRC calculation (list of bytes to transfer).
         @return: (StatusCode, result) - result is exactly 2 bytes long
         '''
@@ -975,7 +975,7 @@ class MFRC522(object):
         Get the current MFRC522 Receiver Gain (RxGain[2:0]) value.
         See 9.3.3.6 / table 98 in http://www.nxp.com/documents/data_sheet/MFRC522.pdf
         NOTE: Return value scrubbed with (0x07<<4)=01110000b as RCFfgReg may use reserved bits.
-        
+
         @return: Value of the RxGain, scrubbed to the 3 bits used.
         '''
         if self.__log_trace:
@@ -1003,7 +1003,7 @@ class MFRC522(object):
         '''
         Performs a self-test of the MFRC522
         See 16.1.1 in http://www.nxp.com/documents/data_sheet/MFRC522.pdf
-        
+
         @return: Whether or not the test passed. Or false if no firmware reference is available.
         '''
         if self.__log_trace:
@@ -1062,7 +1062,7 @@ class MFRC522(object):
         version = self.pcd_read_register(PCD_Register.VersionReg)
 
         # Pick the appropriate reference values
-        #const byte *reference;
+        # const byte *reference;
         if version == 0x88:    # Fudan Semiconductor FM17522 clone
             reference = self.FM17522_firmware_reference
         elif version == 0x90:    # Version 0.0
@@ -1135,7 +1135,7 @@ class MFRC522(object):
         '''
         Executes the Transceive command.
         CRC validation can only be done if backData and backLen are specified.
-        
+
         @param send_data: The data to transfer to the FIFO (list of bytes).
         @param wants_back_data: True if data should be read back after executing the command.
         @param tx_valid_bits: The number of valid bits in the last byte. 0 for 8 valid bits.
@@ -1153,7 +1153,7 @@ class MFRC522(object):
         '''
         Transfers data to the MFRC522 FIFO, executes a command, waits for completion and transfers data back from the FIFO.
         CRC validation can only be done if backData and backLen are specified.
-        
+
         @param command: The command to execute. One of the PCD_Command enums.
         @param wait_irq: The bits in the ComIrqReg register that signals successful completion of the command.
         @param send_data: The data to transfer to the FIFO (list of bytes).
@@ -1284,7 +1284,7 @@ class MFRC522(object):
         '''
         Transmits a REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection. 7 bit frame.
         Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
-        
+
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
         '''
         if self.__log_trace:
@@ -1296,7 +1296,7 @@ class MFRC522(object):
         '''
         Transmits a Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for anticollision or selection. 7 bit frame.
         Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
-        
+
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
         '''
         if self.__log_trace:
@@ -1308,7 +1308,7 @@ class MFRC522(object):
         '''
         Transmits REQA or WUPA commands.
         Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
-        
+
         @param command: The command to send - PICC_CMD_REQA or PICC_CMD_WUPA
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
         '''
@@ -1333,7 +1333,7 @@ class MFRC522(object):
         On success:
                 - The chosen PICC is in state ACTIVE(*) and all other PICCs have returned to state IDLE/HALT. (Figure 7 of the ISO/IEC 14443-3 draft.)
                 - The UID size and value of the chosen PICC is returned in *uid along with the SAK.
-        
+
         A PICC UID consists of 4, 7 or 10 bytes.
         Only 4 bytes can be specified in a SELECT command, so for the longer UIDs two or three iterations are used:
                 UID size    Number of UID bytes        Cascade levels        Example of PICC
@@ -1341,7 +1341,7 @@ class MFRC522(object):
                 single                 4                        1                MIFARE Classic
                 double                 7                        2                MIFARE Ultralight
                 triple                10                        3                Not currently in use?
-        
+
         @param uid: Optional, can be used to supply a known UID.
         @param rx_valid_bits: The number of known UID bits supplied in *uid. Normally 0. If set you must also supply uid->size.
         @return (StatusCode, Uid)
@@ -1651,7 +1651,7 @@ class MFRC522(object):
     def picc_halt_a(self):
         '''
         Instructs a PICC in state ACTIVE(*) to go to state HALT.
-        
+
         @return: StatusCode
         '''
         if self.__log_trace:
@@ -1691,9 +1691,9 @@ class MFRC522(object):
         For use with MIFARE Classic PICCs.
         The PICC must be selected - ie in state ACTIVE(*) - before calling this function.
         Remember to call PCD_StopCrypto1() after communicating with the authenticated PICC - otherwise no new communications can start.
-        
+
         All keys are set to FFFFFFFFFFFFh at chip delivery.
-        
+
         @param command: PICC_CMD_MF_AUTH_KEY_A or PICC_CMD_MF_AUTH_KEY_B
         @param block_addr: The block number. See numbering in the comments in the .h file.
         @param key: MIFARE_Key containing the Crypteo1 key to use (6 bytes)
@@ -1739,18 +1739,18 @@ class MFRC522(object):
     def mifare_read(self, block_addr):
         '''
         Reads 16 bytes (+ 2 bytes CRC_A) from the active PICC.
-        
+
         For MIFARE Classic the sector containing the block must be authenticated before calling this function.
-        
+
         For MIFARE Ultralight only addresses 00h to 0Fh are decoded.
         The MF0ICU1 returns a NAK for higher addresses.
         The MF0ICU1 responds to the READ command by sending 16 bytes starting from the page address defined by the command argument.
         For example; if blockAddr is 03h then pages 03h, 04h, 05h, 06h are returned.
         A roll-back is implemented: If blockAddr is 0Eh, then the contents of pages 0Eh, 0Fh, 00h and 01h are returned.
-        
+
         The buffer must be at least 18 bytes because a CRC_A is also returned.
         Checks the CRC_A before returning STATUS_OK.
-        
+
         @return: (StatusCode, data) - Status and data read from the given block address
         '''
         if self.__log_trace:
@@ -1773,13 +1773,13 @@ class MFRC522(object):
     def mifare_write(self, block_addr, data):
         '''
         Writes 16 bytes to the active PICC.
-        
+
         For MIFARE Classic the sector containing the block must be authenticated before calling this function.
-        
+
         For MIFARE Ultralight the operation is called "COMPATIBILITY WRITE".
         Even though 16 bytes are transferred to the Ultralight PICC, only the least significant 4 bytes (bytes 0 to 3)
         are written to the specified address. It is recommended to set the remaining bytes 04h to 0Fh to all logic 0.
-        
+
         @param block_addr: MIFARE Classic: The block (0-0xff) number. MIFARE Ultralight: The page (2-15) to write to.
         @param data: The 16 bytes to write to the PICC
         @return STATUS_OK on success, STATUS_??? otherwise.
@@ -1815,7 +1815,7 @@ class MFRC522(object):
     def mifare_ultralight_write(self, page, data):
         '''
         Writes a 4 byte page to the active MIFARE Ultralight PICC.
-        
+
         @param page: The page (2-15) to write to.
         @param data: The 4 bytes to write to the PICC
         @return STATUS_OK on success, STATUS_??? otherwise.
@@ -1847,7 +1847,7 @@ class MFRC522(object):
         For MIFARE Classic only. The sector containing the block must be authenticated before calling this function.
         Only for blocks in "value block" mode, ie with access bits [C1 C2 C3] = [110] or [001].
         Use MIFARE_Transfer() to store the result in a block.
-        
+
         @param block_addr: The block (0-0xff) number.
         @param delta: This number is subtracted from the value of block blockAddr.
         @return: STATUS_OK on success, STATUS_??? otherwise.
@@ -1863,7 +1863,7 @@ class MFRC522(object):
         For MIFARE Classic only. The sector containing the block must be authenticated before calling this function.
         Only for blocks in "value block" mode, ie with access bits [C1 C2 C3] = [110] or [001].
         Use MIFARE_Transfer() to store the result in a block.
-        
+
         @param block_addr: The block (0-0xff) number.
         @param delta: This number is added to the value of block blockAddr.
         @return: STATUS_OK on success, STATUS_??? otherwise.
@@ -1879,7 +1879,7 @@ class MFRC522(object):
         For MIFARE Classic only. The sector containing the block must be authenticated before calling this function.
         Only for blocks in "value block" mode, ie with access bits [C1 C2 C3] = [110] or [001].
         Use MIFARE_Transfer() to store the result in a block.
-        
+
         @param block_addr: The block (0-0xff) number.
         @return: STATUS_OK on success, STATUS_??? otherwise.
         '''
@@ -1890,11 +1890,11 @@ class MFRC522(object):
         # Doing only a single step does not work, so I chose to transfer 0L in
         # step two.
         return self._mifare_two_step_helper(PICC_Command.PICC_CMD_MF_RESTORE, block_addr, 0)
-    
+
     def _mifare_two_step_helper(self, command, block_addr, data):
         '''
         Helper function for the two-step MIFARE Classic protocol operations Decrement, Increment and Restore.
-        
+
         @param command: The command to use
         @param block_addr: The block (0-0xff) number.
         @param data: The data to transfer in step 2
@@ -1925,7 +1925,7 @@ class MFRC522(object):
         MIFARE Transfer writes the value stored in the volatile memory into one MIFARE Classic block.
         For MIFARE Classic only. The sector containing the block must be authenticated before calling this function.
         Only for blocks in "value block" mode, ie with access bits [C1 C2 C3] = [110] or [001].
-        
+
         @param block_addr: The block (0-0xff) number.
         @return STATUS_OK on success, STATUS_??? otherwise.
         '''
@@ -1946,11 +1946,11 @@ class MFRC522(object):
     def mifare_get_value(self, block_addr):
         '''
         Helper routine to read the current value from a Value Block.
-        
+
         Only for MIFARE Classic and only for blocks in "value block" mode, that
         is: with access bits [C1 C2 C3] = [110] or [001]. The sector containing
         the block must be authenticated before calling this function. 
-        
+
         @param block_addr: The block (0x00-0xff) number.
         @param[out]  value       Current value of the Value Block.
         @return: (StatusCode, value) - value contains the current value of the Value Block.
@@ -1970,11 +1970,11 @@ class MFRC522(object):
     def mifare_set_value(self, block_addr, value):
         '''
         Helper routine to write a specific value into a Value Block.
-        
+
         Only for MIFARE Classic and only for blocks in "value block" mode, that
         is: with access bits [C1 C2 C3] = [110] or [001]. The sector containing
         the block must be authenticated before calling this function. 
-        
+
         @param block_addre: The block (0x00-0xff) number.
         @param value: New value of the Value Block.
         @return: STATUS_OK on success, STATUS_??? otherwise.
@@ -2012,7 +2012,7 @@ class MFRC522(object):
         '''
         Wrapper for MIFARE protocol communication.
         Adds CRC_A, executes the Transceive command and checks that the response is MF_ACK or a timeout.
-        
+
         @param send_data: Data to transfer to the FIFO. Do NOT include the CRC_A.
         @param accept_timeout: True => A timeout is also success
         @return STATUS_OK on success, STATUS_??? otherwise.
@@ -2034,7 +2034,7 @@ class MFRC522(object):
             return result
 
         # Transceive the data, store the reply in cmdBuffer[]
-        wait_irq = 0x30 # RxIRq and IdleIRq
+        wait_irq = 0x30  # RxIRq and IdleIRq
         result, rx_back_data, rx_valid_bits = self.pcd_communicate_with_picc(
             PCD_Command.PCD_Transceive, wait_irq, send_data + crc_result, True, 0)
         if accept_timeout and result == StatusCode.STATUS_TIMEOUT:
@@ -2057,7 +2057,7 @@ class MFRC522(object):
     def get_status_code_name(self, code):
         '''
         Returns a __FlashStringHelper pointer to a status code name.
-        
+
         @param code: One of the StatusCode enums.
         @return:  StatusCode name
         '''
@@ -2066,7 +2066,7 @@ class MFRC522(object):
     def picc_get_type(self, uid):
         '''
         Translates the SAK (Select Acknowledge) from the UID to a PICC type.
-        
+
         @param sak: The SAK byte returned from PICC_Select().
         @return: PICC_Type
         '''
@@ -2075,7 +2075,7 @@ class MFRC522(object):
     def picc_get_type_name(self, picc_type):
         '''
         Returns a __FlashStringHelper pointer to the PICC type name.
-        
+
         @param picc_type: One of the PICC_Type enums.
         @return: PICC_Type name
         '''
@@ -2117,7 +2117,7 @@ class MFRC522(object):
         Dumps debug info about the selected PICC to Serial.
         On success the PICC is halted after dumping the data.
         For MIFARE Classic the factory default key of 0xFFFFFFFFFFFF is tried.  
-        
+
         @param uid: Pointer to Uid struct returned from a successful PICC_Select().
         @deprecated: Kept for bakward compatibility
         '''
@@ -2157,7 +2157,7 @@ class MFRC522(object):
     def picc_dump_details_to_serial(self, uid):
         '''
         Dumps card info (UID,SAK,Type) about the selected PICC to Serial.
- 
+
         @param uid: Pointer to Uid struct returned from a successful PICC_Select().
         @deprecated: kept for backward compatibility
         '''
@@ -2178,7 +2178,7 @@ class MFRC522(object):
         '''
         Dumps memory contents of a MIFARE Classic PICC.
         On success the PICC is halted after dumping the data.
-        
+
         @param uid: Pointer to Uid struct returned from a successful PICC_Select().
         @param picc_type: One of the PICC_Type enums.
         @param key: MIFARE_Key A used for all sectors.
@@ -2216,7 +2216,7 @@ class MFRC522(object):
         Dumps memory contents of a sector of a MIFARE Classic PICC.
         Uses PCD_Authenticate(), MIFARE_Read() and PCD_StopCrypto1.
         Always uses PICC_CMD_MF_AUTH_KEY_A because only Key A can always read the sector trailer access bits.
-        
+
         @param uid: Pointer to Uid struct returned from a successful PICC_Select().
         @param key: MIFARE_Key A for the sector.
         @param sector: sector to dump, 0..39.
@@ -2239,9 +2239,9 @@ class MFRC522(object):
         # The four CX bits are stored together in a nible cx and an inverted
         # nible cx_.
 
-        #byte c1_, c2_, c3_;        # Inverted nibbles
+        # byte c1_, c2_, c3_;        # Inverted nibbles
         g = [0] * 4                # Access bits for each of the four groups.
-        #byte group;               # 0-3 - active group for access bits
+        # byte group;               # 0-3 - active group for access bits
         # bool firstInGroup;        # True for the first block dumped in the
         # group
 
@@ -2363,7 +2363,6 @@ class MFRC522(object):
                 print('{page:>4}  {vals}'.format(
                     page=i, vals=format_hex(data[start:end])))
 
-
     # TODO missing functions
 
     #=========================================================================
@@ -2374,7 +2373,7 @@ class MFRC522(object):
         '''
         Returns true if a PICC responds to PICC_CMD_REQA.
         Only "new" cards in state IDLE are invited. Sleeping cards in state HALT are ignored.
-        
+
         @return: boolean
         '''
         if self.__log_trace:
@@ -2393,7 +2392,7 @@ class MFRC522(object):
         '''
         Returns true if a PICC responds to PICC_CMD_WUPA.
         Cards in state IDLE or HALT are invited. 
-        
+
         @return: boolean
         '''
         if self.__log_trace:
@@ -2414,7 +2413,7 @@ class MFRC522(object):
         Returns true if a UID could be read.
         Remember to call PICC_IsNewCardPresent(), PICC_RequestA() or PICC_WakeupA() first.
         The read UID is available in the class variable uid.
-        
+
         @return: (result, Uid) - result is true if a UID could be read
         '''
         if self.__log_trace:
@@ -2431,4 +2430,3 @@ class MFRC522(object):
 
 # Helper function to suspend executen for x microsecends
 def usleep(x): return sleep(x / 1000000.0)
-

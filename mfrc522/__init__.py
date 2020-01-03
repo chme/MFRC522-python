@@ -1,5 +1,6 @@
 from .mfrc522 import (
     MFRC522,
+    PCD_Firmware,
     PCD_Register,
     PCD_Command,
     PCD_RxGain,

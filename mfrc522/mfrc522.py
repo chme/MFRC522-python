@@ -463,7 +463,8 @@ class Uid(object):
     '''
     A struct used for passing the UID of a PICC.
     '''
-    size = 0            # Number of bytes in the UID. 4, 7 or 10.
+    # Number of bytes in the UID. 4, 7 or 10
+    size = 0
     uid_byte = [0] * 10
     # The SAK (Select acknowledge) byte returned from the PICC after
     # successful selection.
@@ -486,34 +487,22 @@ class Uid(object):
         @param sak: The SAK byte returned from PICC_Select().
         @return: PICC_Type
         '''
+        picc_type = PICC_Type.PICC_TYPE_UNKNOWN
+
         # http://www.nxp.com/documents/application_note/AN10833.pdf
         # 3.2 Coding of Select Acknowledge (SAK)
         # ignore 8-bit (iso14443 starts with LSBit = bit 1)
         # fixes wrong type for manufacturer Infineon
         # (http://nfc-tools.org/index.php?title=ISO14443A)
         if self.sak != None:
-            self.sak &= 0x7F
-            if self.sak == 0x04:
-                return PICC_Type.PICC_TYPE_NOT_COMPLETE    # UID not complete
-            elif self.sak == 0x09:
-                return PICC_Type.PICC_TYPE_MIFARE_MINI
-            elif self.sak == 0x08:
-                return PICC_Type.PICC_TYPE_MIFARE_1K
-            elif self.sak == 0x18:
-                return PICC_Type.PICC_TYPE_MIFARE_4K
-            elif self.sak == 0x00:
-                return PICC_Type.PICC_TYPE_MIFARE_UL
-            elif self.sak == 0x10:
-                return PICC_Type.PICC_TYPE_MIFARE_PLUS
-            elif self.sak == 0x11:
-                return PICC_Type.PICC_TYPE_MIFARE_PLUS
-            elif self.sak == 0x01:
-                return PICC_Type.PICC_TYPE_TNP3XXX
-            elif self.sak == 0x20:
-                return PICC_Type.PICC_TYPE_ISO_14443_4
-            elif self.sak == 0x40:
-                return PICC_Type.PICC_TYPE_ISO_18092
-        return PICC_Type.PICC_TYPE_UNKNOWN
+            tmp_sak = self.sak & 0x7F
+            try:
+                picc_type = PICC_Type(tmp_sak)
+            except ValueError:
+                logger_debug.error(
+                    _F('Unkown SAK value [{}], cannot identify PICC type, returning UNKNOWN', format_hex([tmp_sak])))
+
+        return picc_type
 
     def __str__(self):
         return '<UID: [{}], SAK: {:#04x}, Type: {}>'.format(format_hex(self.uid()), self.sak if self.sak else 0, self.get_picc_type())

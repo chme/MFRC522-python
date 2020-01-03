@@ -1061,6 +1061,8 @@ class MFRC522(object):
         elif version == 0x92:    # Version 2.0
             reference = self.MFRC522_firmware_referenceV2_0
         else:  # Unknown version
+            logger_debug.error(
+                _F('Unkown frimware version value [{}], cannot run self test', format_hex([version])))
             return False  # abort test
 
         # Verify that the results match up to our expectations

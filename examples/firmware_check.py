@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 run = True
 
 
-def end(signal, frame):
+def end(_signal, _frame):
     global run
     print('Ctrl+C captured, ending example program.')
     run = False

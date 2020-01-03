@@ -138,14 +138,6 @@ logger_spi = logging.getLogger('mfrc522.spi')
 #=========================================================================
 
 
-class ValueDescriptionEnum(Enum):
-    def __new__(cls, value,  description):
-        obj = object.__new__(cls)
-        obj._value_ = value
-        obj.description = description
-        return obj
-
-
 class PCD_Firmware(Enum):
     '''
     Firmware version with data for self-test
@@ -198,7 +190,7 @@ class PCD_Firmware(Enum):
         return obj
 
 
-class PCD_Register(ValueDescriptionEnum):
+class PCD_Register(Enum):
     '''
     MFRC522 registers. Described in chapter 9 of the datasheet.
     When using SPI all addresses are shifted one bit left in the "SPI address byte" (section 8.1.2.3)
@@ -290,8 +282,14 @@ class PCD_Register(ValueDescriptionEnum):
     _Reserved_0x3E = (0x3E, 'reserved for production tests')
     _Reserved_0x3F = (0x3F, 'reserved for production tests')
 
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
-class PCD_Command(ValueDescriptionEnum):
+
+class PCD_Command(Enum):
     '''
     MFRC522 commands. Described in chapter 10 of the datasheet.
     '''
@@ -310,8 +308,14 @@ class PCD_Command(ValueDescriptionEnum):
         0x0E, 'performs the MIFARE standard authentication as a reader')
     PCD_SoftReset = (0x0F, 'resets the MFRC522')
 
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
-class PCD_RxGain(ValueDescriptionEnum):
+
+class PCD_RxGain(Enum):
     '''
     MFRC522 RxGain[2:0] masks, defines the receiver's signal voltage gain factor (on the PCD).
     Described in 9.3.3.6 / table 98 of the datasheet at http://www.nxp.com/documents/data_sheet/MFRC522.pdf
@@ -333,8 +337,14 @@ class PCD_RxGain(ValueDescriptionEnum):
     RxGain_max = (
         0x07 << 4, '111b - 48 dB, maximum, convenience for RxGain_48dB')
 
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
-class PICC_Command(ValueDescriptionEnum):
+
+class PICC_Command(Enum):
     '''
     Commands sent to the PICC.
     '''
@@ -376,8 +386,14 @@ class PICC_Command(ValueDescriptionEnum):
     # Ultralight.
     PICC_CMD_UL_WRITE = (0xA2, 'Writes one 4 byte page to the PICC.')
 
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
-class MIFARE_Misc(ValueDescriptionEnum):
+
+class MIFARE_Misc(Enum):
     '''
     MIFARE constants that does not fit anywhere else
     '''
@@ -385,8 +401,14 @@ class MIFARE_Misc(ValueDescriptionEnum):
         0xA, 'The MIFARE Classic uses a 4 bit ACK/NAK. Any other value than 0xA is NAK.')
     MF_KEY_SIZE = (6, 'A Mifare Crypto1 key is 6 bytes.')
 
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
-class PICC_Type(ValueDescriptionEnum):
+
+class PICC_Type(Enum):
     '''
     PICC types we can detect. Remember to update PICC_GetTypeName() if you add more.
     '''
@@ -402,6 +424,12 @@ class PICC_Type(ValueDescriptionEnum):
     PICC_TYPE_TNP3XXX = (
         0x01, 'Only mentioned in NXP AN 10833 MIFARE Type Identification Procedure')
     PICC_TYPE_NOT_COMPLETE = (0x04, 'SAK indicates UID is not complete.')
+
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
     def get_name(self):
         '''
@@ -473,7 +501,7 @@ class PICC_Type(ValueDescriptionEnum):
         return self.get_name() + ' ' + Enum.__str__(self)
 
 
-class StatusCode(ValueDescriptionEnum):
+class StatusCode(Enum):
     '''
     Return codes from the functions in this class. Remember to update GetStatusCodeName() if you add more.
     '''
@@ -490,6 +518,12 @@ class StatusCode(ValueDescriptionEnum):
     STATUS_MIFARE_NACK = (8, 'A MIFARE PICC responded with NAK.')
     STATUS_CANCELED = (
         9, 'Used in SimpleMFRC522 to signal that blocking read/write was canceled')
+
+    def __new__(cls, value,  description):
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.description = description
+        return obj
 
     def get_name(self):
         '''

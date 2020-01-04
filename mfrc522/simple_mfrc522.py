@@ -68,6 +68,12 @@ class SimpleMFRC522(object):
     def cleanup(self):
         self.rfid.pcd_cleanup()
 
+    def firmware_version(self):
+        return self.rfid.pcd_get_firmware_version()
+
+    def selftest(self):
+        return self.rfid.pcd_perform_self_test()
+
     def is_new_card_present(self):
         return self.rfid.picc_is_new_card_present()
 
@@ -158,6 +164,32 @@ class SimpleMFRC522(object):
 
     def cancel_wait(self):
         self.cancel_irq.set()
+
+    def wait_for_card_present(self):
+        '''
+        Blocks until a card is present. Reads the UID of the card and returns it.
+
+        @return: (StatusCode, Uid)
+        '''
+        uid = None
+        is_card_present = False
+        while not is_card_present:
+            canceled = not self.wait_for_interrupt()
+            if canceled:
+                return StatusCode.STATUS_CANCELED, None
+
+            status, uid = self.rfid.picc_read_card_serial()
+            if not status:
+                logger_debug.warn(
+                    _F('Failed to read UID in read_bytes (status: {}, uid: {})', status, uid))
+                continue
+
+            is_card_present = True
+
+        # Halt PICC
+        self.rfid.picc_halt_a()
+
+        return status, uid
 
     def read_text(self, terminal_byte=0x00, encoding='UTF-8', errors='ignore'):
         '''

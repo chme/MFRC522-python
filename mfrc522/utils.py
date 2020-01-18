@@ -17,14 +17,18 @@ You should have received a copy of the GNU Lesser General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import traceback
+
+
 class FormatString(object):
     '''
     Helper class to create log messages with string format()
     https://stackoverflow.com/questions/13131400/logging-variable-data-with-new-format-string/13131690#13131690
-    
+
     Example:
     >>> logger.debug(FormatString('Message with {0} {name}', 2, name='placeholders'))
     '''
+
     def __init__(self, fmt, *args, **kwargs):
         self.fmt = fmt
         self.args = args
@@ -37,6 +41,7 @@ class FormatString(object):
             message = 'ERROR creating log message! ' + "\n" + traceback.format_exc()
         return message
 
+
 def format_hex(data):
     '''
     Helper function to create a readable string for a list of bytes
@@ -46,4 +51,3 @@ def format_hex(data):
     except:
         result = 'ERROR: {} is not a HEX list'.format(data)
     return result
-

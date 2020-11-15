@@ -119,7 +119,7 @@ class SimpleMFRC522(object):
         # Propagate the IdleIrq and loAlert
         self.rfid.pcd_write_register(
             PCD_Register.ComIrqReg, 0x7F)  # clear interrupt
-        #self.rfid.pcd_write_register(PCD_Register.ComIrqReg, 0x00)
+        # self.rfid.pcd_write_register(PCD_Register.ComIrqReg, 0x00)
         self.rfid.pcd_write_register(PCD_Register.ComIEnReg, 0xA0)  # rx irq
 
         self.rfid.pcd_write_register(
@@ -139,7 +139,7 @@ class SimpleMFRC522(object):
 
     def wait_for_card_removed(self, retries=5):
         '''
-        Blocks until no cards are present (polls for new cards and if none are found in 5 times in a row 
+        Blocks until no cards are present (polls for new cards and if none are found in 5 times in a row
         assumes that no card is present)
 
         @return: True if no cards are present, False if operation was canceled
@@ -193,16 +193,19 @@ class SimpleMFRC522(object):
 
     def read_text(self, terminal_byte=0x00, encoding='UTF-8', errors='ignore'):
         '''
-        Read all data blocks from a MIFARE Classic card until the given terminal byte (default is 0x00) is found and converts the data to 
-        a string with the given encoding and error handling scheme (defaults to UTF-8 and error handling scheme 'ignore').
+        Read all data blocks from a MIFARE Classic card until the given terminal byte (default is 0x00) is found and
+        converts the data to a string with the given encoding and error handling scheme (defaults to UTF-8 and error
+        handling scheme 'ignore').
         In order to read all data blocks pass None as terminal_byte parameter.
 
         This method blocks until a MIFARE Classic card is present.
 
-        @param terminal_byte: Byte value that indicates end of string (default = 0x00), set to None if all data should be returned
-        @param encoding: The encoding used to decode the byte array into a string (default = 'UTF-8')
-        @param errors: The error handling scheme if an decoding error occures (default = 'ignore', other possible values are 'strict' and 'replace')
-        @return: (StatusCode, Uid, Text)
+        @param terminal_byte: Byte value that indicates end of string (default = 0x00), set to None if all data
+                              should be returned
+        @param encoding:      The encoding used to decode the byte array into a string (default = 'UTF-8')
+        @param errors:        The error handling scheme if an decoding error occures
+                              (default = 'ignore', other possible values are 'strict' and 'replace')
+        @return:              (StatusCode, Uid, Text)
         '''
 
         status, uid, data = self.read_bytes(terminal_byte=terminal_byte)
@@ -220,7 +223,8 @@ class SimpleMFRC522(object):
 
         This method blocks until a MIFARE Classic card is present.
 
-        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if all data should be returned
+        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if all data should
+                              be returned
         @return: (StatusCode, Uid, data)
         '''
         uid = None
@@ -265,7 +269,8 @@ class SimpleMFRC522(object):
         Read all data blocks from a previously selected MIFARE Classic card
 
         @param uid: UID from the selected PICC
-        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if all data should be returned
+        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if all data should
+                              be returned
         @return: (StatusCode, data) - data is a list of all bytes read from the data blocks of the selected PICC
         '''
         key = MIFARE_Key()
@@ -287,7 +292,8 @@ class SimpleMFRC522(object):
                 status, block_data = self.rfid.mifare_read(block_addr)
                 if status != StatusCode.STATUS_OK:
                     logger_debug.error(
-                        _F('Error reading from MIFARE Classic PICC (block_addr: {:#04x}, uid: [{}])', block_addr, format_hex(uid.uid())))
+                        _F('Error reading from MIFARE Classic PICC (block_addr: {:#04x}, uid: [{}])',
+                           block_addr, format_hex(uid.uid())))
                     return status, None
 
                 # A block contains exactly 16 bytes of data
@@ -311,9 +317,11 @@ class SimpleMFRC522(object):
         This method blocks until a MIFARE Classic card is present, that can be written.
 
         @param text: The text to write to the PICC
-        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if no terminal byte should be used
+        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if no terminal byte
+                              should be used
         @param encoding: The encoding used to decode the byte array into a string (default = 'UTF-8')
-        @param errors: The error handling scheme if an decoding error occures (default = 'ignore', other possible values are 'strict' and 'replace')
+        @param errors: The error handling scheme if an decoding error occures
+                       (default = 'ignore', other possible values are 'strict' and 'replace')
         @return: (StatusCode, Uid, text)
         '''
         data = list(bytearray(text, encoding=encoding))
@@ -335,7 +343,8 @@ class SimpleMFRC522(object):
         This method blocks until a MIFARE Classic card is present, that can be written.
 
         @param data: The list of bytes to to write to the PICC
-        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if no terminal byte should be used
+        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if no terminal byte
+                              should be used
         @return: (StatusCode, Uid, text)
         '''
         # Wait for interrupt
@@ -384,7 +393,8 @@ class SimpleMFRC522(object):
 
         @param uid: UID from the selected PICC
         @param data: The list of bytes to to write to the PICC
-        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if no terminal byte should be used
+        @param terminal_byte: Byte value that indicates end of data (default = 0x00), set to None if no terminal byte
+                              should be used
         @return: StatusCode
         '''
         key = MIFARE_Key()
@@ -414,7 +424,8 @@ class SimpleMFRC522(object):
                 status = self.rfid.mifare_write(block_addr, block_data)
                 if status != StatusCode.STATUS_OK:
                     logger_debug.error(
-                        _F('Error writing to MIFARE Classic PICC (block_addr: {:#04x}, uid: [{}])', block_addr, format_hex(uid.uid())))
+                        _F('Error writing to MIFARE Classic PICC (block_addr: {:#04x}, uid: [{}])',
+                           block_addr, format_hex(uid.uid())))
                     return status, uid, None
 
                 if len(all_block_data) == 0:

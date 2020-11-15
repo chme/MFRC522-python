@@ -17,8 +17,8 @@ sys.modules['spidev'] = mock.MagicMock()
 
 
 # After mocking libraries import the system under test (sut)
-from mfrc522 import Uid
-from mfrc522 import PICC_Type
+from mfrc522 import Uid            # noqa
+from mfrc522 import PICC_Type      # noqa
 
 
 class TestMFRC522(unittest.TestCase):

@@ -11,8 +11,8 @@ sys.modules['spidev'] = mock.MagicMock()
 sys.modules['MFRC522'] = mock.MagicMock()
 
 # After mocking libraries import the system under test (sut)
-from mfrc522 import SimpleMFRC522
-from mfrc522 import StatusCode
+from mfrc522 import SimpleMFRC522            # noqa
+from mfrc522 import StatusCode               # noqa
 
 logging.basicConfig(level=logging.DEBUG)
 

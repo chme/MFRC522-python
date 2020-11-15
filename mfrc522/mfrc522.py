@@ -1,5 +1,16 @@
+
+import logging
+from time import sleep
+
+import RPi.GPIO as GPIO
+from enum import Enum
+import spidev
+
+from .utils import format_hex
+from .utils import FormatString as _F
+
 '''
-Library to interface with the NFC reader Module MFRC522 on the Raspberry Pi. 
+Library to interface with the NFC reader Module MFRC522 on the Raspberry Pi.
 This is a Python port of the "Arduino RFID Library for MFRC522" published by
 under the public domain (https://github.com/miguelbalboa/rfid).
 
@@ -46,12 +57,13 @@ You may subscribe to these loggers for getting logging messages.
 MFRC522.h - Library to use ARDUINO RFID MODULE KIT 13.56 MHZ WITH TAGS SPI W AND R BY COOQROBOT.
 Based on code Dr.Leong   ( WWW.B2CQSHOP.COM )
 Created by Miguel Balboa (circuitito.com), Jan, 2012.
-Rewritten by Søren Thing Andersen (access.thing.dk), fall of 2013 (Translation to English, refactored, comments, anti collision, cascade levels.)
+Rewritten by Søren Thing Andersen (access.thing.dk), fall of 2013 (Translation to English, refactored, comments, anti
+collision, cascade levels.)
 Extended by Tom Clement with functionality to write to sector 0 of UID changeable Mifare cards.
 Released into the public domain.
 
 Please read this file for an overview and then MFRC522.cpp for comments on the specific functions.
-Search for "mf-rc522" on ebay.com to purchase the MF-RC522 board. 
+Search for "mf-rc522" on ebay.com to purchase the MF-RC522 board.
 
 There are three hardware components involved:
 1) The micro controller: An Arduino
@@ -62,7 +74,8 @@ The microcontroller and card reader uses SPI for communication.
 The protocol is described in the MFRC522 datasheet: http://www.nxp.com/documents/data_sheet/MFRC522.pdf
 
 The card reader and the tags communicate using a 13.56MHz electromagnetic field.
-The protocol is defined in ISO/IEC 14443-3 Identification cards -- Contactless integrated circuit cards -- Proximity cards -- Part 3: Initialization and anticollision".
+The protocol is defined in ISO/IEC 14443-3 Identification cards -- Contactless integrated circuit cards -- Proximity cards --
+Part 3: Initialization and anticollision".
 A free version of the final draft can be found at http://wg8.de/wg8n1496_17n3613_Ballot_FCD14443-3.pdf
 Details are found in chapter 6, Type A – Initialization and anticollision.
 
@@ -79,7 +92,8 @@ The MIFARE Ultralight chip and protocol is described in the datasheets:
 MIFARE Classic 1K (MF1S503x):
         Has 16 sectors * 4 blocks/sector * 16 bytes/block = 1024 bytes.
         The blocks are numbered 0-63.
-        Block 3 in each sector is the Sector Trailer. See http://www.mouser.com/ds/2/302/MF1S503x-89574.pdf sections 8.6 and 8.7:
+        Block 3 in each sector is the Sector Trailer.
+        See http://www.mouser.com/ds/2/302/MF1S503x-89574.pdf sections 8.6 and 8.7:
                 Bytes 0-5:   Key A
                 Bytes 6-8:   Access Bits
                 Bytes 9:     User data
@@ -88,8 +102,10 @@ MIFARE Classic 1K (MF1S503x):
         To access a block, an authentication using a key from the block's sector must be performed first.
         Example: To read from block 10, first authenticate using a key from sector 3 (blocks 8-11).
         All keys are set to FFFFFFFFFFFFh at chip delivery.
-        Warning: Please read section 8.7 "Memory Access". It includes this text: if the PICC detects a format violation the whole sector is irreversibly blocked.
-       To use a block in "value block" mode (for Increment/Decrement operations) you need to change the sector trailer. Use PICC_SetAccessBits() to calculate the bit patterns.
+        Warning: Please read section 8.7 "Memory Access". It includes this text: if the PICC detects a format violation the
+        whole sector is irreversibly blocked.
+        To use a block in "value block" mode (for Increment/Decrement operations) you need to change the sector trailer.
+        Use PICC_SetAccessBits() to calculate the bit patterns.
 MIFARE Classic 4K (MF1S703x):
         Has (32 sectors * 4 blocks/sector + 8 sectors * 16 blocks/sector) * 16 bytes/block = 4096 bytes.
         The blocks are numbered 0-255.
@@ -102,30 +118,22 @@ MIFARE Classic Mini (MF1 IC S20):
 MIFARE Ultralight (MF0ICU1):
         Has 16 pages of 4 bytes = 64 bytes.
         Pages 0 + 1 is used for the 7-byte UID.
-        Page 2 contains the last check digit for the UID, one byte manufacturer internal data, and the lock bytes (see http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf section 8.5.2)
+        Page 2 contains the last check digit for the UID, one byte manufacturer internal data, and the lock bytes
+        (see http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf section 8.5.2)
         Page 3 is OTP, One Time Programmable bits. Once set to 1 they cannot revert to 0.
-        Pages 4-15 are read/write unless blocked by the lock bytes in page 2. 
+        Pages 4-15 are read/write unless blocked by the lock bytes in page 2.
 MIFARE Ultralight C (MF0ICU2):
         Has 48 pages of 4 bytes = 192 bytes.
         Pages 0 + 1 is used for the 7-byte UID.
-        Page 2 contains the last check digit for the UID, one byte manufacturer internal data, and the lock bytes (see http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf section 8.5.2)
+        Page 2 contains the last check digit for the UID, one byte manufacturer internal data, and the lock bytes
+        (see http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf section 8.5.2)
         Page 3 is OTP, One Time Programmable bits. Once set to 1 they cannot revert to 0.
-        Pages 4-39 are read/write unless blocked by the lock bytes in page 2. 
+        Pages 4-39 are read/write unless blocked by the lock bytes in page 2.
         Page 40 Lock bytes
         Page 41 16 bit one way counter
         Pages 42-43 Authentication configuration
-        Pages 44-47 Authentication key 
+        Pages 44-47 Authentication key
 '''
-
-import logging
-from time import sleep
-
-import RPi.GPIO as GPIO
-from enum import Enum
-import spidev
-
-from .utils import format_hex
-from .utils import FormatString as _F
 
 
 logger_debug = logging.getLogger('mfrc522.log')
@@ -133,53 +141,81 @@ logger_trace = logging.getLogger('mfrc522.trace')
 logger_spi = logging.getLogger('mfrc522.spi')
 
 
-#=========================================================================
+# =========================================================================
 # Enum definitions
-#=========================================================================
+# =========================================================================
 
 
 class PCD_Firmware(Enum):
     '''
     Firmware version with data for self-test
     '''
-    MFRC522_V0_0 = (0x90, 'v0.0', 'Version 0.0 (0x90), Philips Semiconductors; Preliminary Specification Revision 2.0 - 01, August 2005; 16.1 self-test', [
-        0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
-        0xBF, 0x22, 0x30, 0x49, 0x59, 0x63, 0xAD, 0xCA,
-        0x7F, 0xE3, 0x4E, 0x03, 0x5C, 0x4E, 0x49, 0x50,
-        0x47, 0x9A, 0x37, 0x61, 0xE7, 0xE2, 0xC6, 0x2E,
-        0x75, 0x5A, 0xED, 0x04, 0x3D, 0x02, 0x4B, 0x78,
-        0x32, 0xFF, 0x58, 0x3B, 0x7C, 0xE9, 0x00, 0x94,
-        0xB4, 0x4A, 0x59, 0x5B, 0xFD, 0xC9, 0x29, 0xDF,
-        0x35, 0x96, 0x98, 0x9E, 0x4F, 0x30, 0x32, 0x8D])
-    MFRC522_V1_0 = (0x91, 'v1.0', 'Version 1.0 (0x91), NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test', [
-        0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
-        0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
-        0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
-        0x14, 0xAF, 0x30, 0x61, 0xC9, 0x70, 0xDB, 0x2E,
-        0x64, 0x22, 0x72, 0xB5, 0xBD, 0x65, 0xF4, 0xEC,
-        0x22, 0xBC, 0xD3, 0x72, 0x35, 0xCD, 0xAA, 0x41,
-        0x1F, 0xA7, 0xF3, 0x53, 0x14, 0xDE, 0x7E, 0x02,
-        0xD9, 0x0F, 0xB5, 0x5E, 0x25, 0x1D, 0x29, 0x79])
-    MFRC522_V2_0 = (0x92, 'v2.0', 'Version 2.0 (0x92), NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test', [
-        0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
-        0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
-        0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
-        0x51, 0x3A, 0xEB, 0x02, 0x0C, 0xA5, 0x00, 0x49,
-        0x7C, 0x84, 0x4D, 0xB3, 0xCC, 0xD2, 0x1B, 0x81,
-        0x5D, 0x48, 0x76, 0xD5, 0x71, 0x61, 0x21, 0xA9,
-        0x86, 0x96, 0x83, 0x38, 0xCF, 0x9D, 0x5B, 0x6D,
-        0xDC, 0x15, 0xBA, 0x3E, 0x7D, 0x95, 0x3B, 0x2F])
-    FM17522 = (0x88, '(clone)', 'Clone, Fudan Semiconductor FM17522 (0x88)', [
-        0x00, 0xD6, 0x78, 0x8C, 0xE2, 0xAA, 0x0C, 0x18,
-        0x2A, 0xB8, 0x7A, 0x7F, 0xD3, 0x6A, 0xCF, 0x0B,
-        0xB1, 0x37, 0x63, 0x4B, 0x69, 0xAE, 0x91, 0xC7,
-        0xC3, 0x97, 0xAE, 0x77, 0xF4, 0x37, 0xD7, 0x9B,
-        0x7C, 0xF5, 0x3C, 0x11, 0x8F, 0x15, 0xC3, 0xD7,
-        0xC1, 0x5B, 0x00, 0x2A, 0xD0, 0x75, 0xDE, 0x9E,
-        0x51, 0x64, 0xAB, 0x3E, 0xE9, 0x15, 0xB5, 0xAB,
-        0x56, 0x9A, 0x98, 0x82, 0x26, 0xEA, 0x2A, 0x62])
-    COUNTERFEIT = (0x12, 'counterfeit chip', 'counterfeit chip', None)
-    UNKNOWN = (-1, '(unknown)', 'unknown chip', None)
+    MFRC522_V0_0 = (
+        0x90,
+        'v0.0',
+        'Version 0.0 (0x90), Philips Semiconductors; Preliminary Specification Revision 2.0 - 01, August 2005; 16.1 self-test',
+        [
+            0x00, 0x87, 0x98, 0x0f, 0x49, 0xFF, 0x07, 0x19,
+            0xBF, 0x22, 0x30, 0x49, 0x59, 0x63, 0xAD, 0xCA,
+            0x7F, 0xE3, 0x4E, 0x03, 0x5C, 0x4E, 0x49, 0x50,
+            0x47, 0x9A, 0x37, 0x61, 0xE7, 0xE2, 0xC6, 0x2E,
+            0x75, 0x5A, 0xED, 0x04, 0x3D, 0x02, 0x4B, 0x78,
+            0x32, 0xFF, 0x58, 0x3B, 0x7C, 0xE9, 0x00, 0x94,
+            0xB4, 0x4A, 0x59, 0x5B, 0xFD, 0xC9, 0x29, 0xDF,
+            0x35, 0x96, 0x98, 0x9E, 0x4F, 0x30, 0x32, 0x8D
+        ])
+    MFRC522_V1_0 = (
+        0x91,
+        'v1.0',
+        'Version 1.0 (0x91), NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test',
+        [
+            0x00, 0xC6, 0x37, 0xD5, 0x32, 0xB7, 0x57, 0x5C,
+            0xC2, 0xD8, 0x7C, 0x4D, 0xD9, 0x70, 0xC7, 0x73,
+            0x10, 0xE6, 0xD2, 0xAA, 0x5E, 0xA1, 0x3E, 0x5A,
+            0x14, 0xAF, 0x30, 0x61, 0xC9, 0x70, 0xDB, 0x2E,
+            0x64, 0x22, 0x72, 0xB5, 0xBD, 0x65, 0xF4, 0xEC,
+            0x22, 0xBC, 0xD3, 0x72, 0x35, 0xCD, 0xAA, 0x41,
+            0x1F, 0xA7, 0xF3, 0x53, 0x14, 0xDE, 0x7E, 0x02,
+            0xD9, 0x0F, 0xB5, 0x5E, 0x25, 0x1D, 0x29, 0x79
+        ])
+    MFRC522_V2_0 = (
+        0x92,
+        'v2.0',
+        'Version 2.0 (0x92), NXP Semiconductors; Rev. 3.8 - 17 September 2014; 16.1.1 self-test',
+        [
+            0x00, 0xEB, 0x66, 0xBA, 0x57, 0xBF, 0x23, 0x95,
+            0xD0, 0xE3, 0x0D, 0x3D, 0x27, 0x89, 0x5C, 0xDE,
+            0x9D, 0x3B, 0xA7, 0x00, 0x21, 0x5B, 0x89, 0x82,
+            0x51, 0x3A, 0xEB, 0x02, 0x0C, 0xA5, 0x00, 0x49,
+            0x7C, 0x84, 0x4D, 0xB3, 0xCC, 0xD2, 0x1B, 0x81,
+            0x5D, 0x48, 0x76, 0xD5, 0x71, 0x61, 0x21, 0xA9,
+            0x86, 0x96, 0x83, 0x38, 0xCF, 0x9D, 0x5B, 0x6D,
+            0xDC, 0x15, 0xBA, 0x3E, 0x7D, 0x95, 0x3B, 0x2F
+        ])
+    FM17522 = (
+        0x88,
+        '(clone)',
+        'Clone, Fudan Semiconductor FM17522 (0x88)',
+        [
+            0x00, 0xD6, 0x78, 0x8C, 0xE2, 0xAA, 0x0C, 0x18,
+            0x2A, 0xB8, 0x7A, 0x7F, 0xD3, 0x6A, 0xCF, 0x0B,
+            0xB1, 0x37, 0x63, 0x4B, 0x69, 0xAE, 0x91, 0xC7,
+            0xC3, 0x97, 0xAE, 0x77, 0xF4, 0x37, 0xD7, 0x9B,
+            0x7C, 0xF5, 0x3C, 0x11, 0x8F, 0x15, 0xC3, 0xD7,
+            0xC1, 0x5B, 0x00, 0x2A, 0xD0, 0x75, 0xDE, 0x9E,
+            0x51, 0x64, 0xAB, 0x3E, 0xE9, 0x15, 0xB5, 0xAB,
+            0x56, 0x9A, 0x98, 0x82, 0x26, 0xEA, 0x2A, 0x62
+        ])
+    COUNTERFEIT = (
+        0x12,
+        'counterfeit chip',
+        'counterfeit chip',
+        None)
+    UNKNOWN = (
+        -1,
+        '(unknown)',
+        'unknown chip',
+        None)
 
     def __new__(cls, value, version, description, reference_data):
         obj = object.__new__(cls)
@@ -293,20 +329,37 @@ class PCD_Command(Enum):
     '''
     MFRC522 commands. Described in chapter 10 of the datasheet.
     '''
-    PCD_Idle = (0x00, 'no action, cancels current command execution')
-    PCD_Mem = (0x01, 'stores 25 bytes into the internal buffer')
-    PCD_GenerateRandomID = (0x02, 'generates a 10-byte random ID number')
+    PCD_Idle = (
+        0x00,
+        'no action, cancels current command execution')
+    PCD_Mem = (
+        0x01,
+        'stores 25 bytes into the internal buffer')
+    PCD_GenerateRandomID = (
+        0x02,
+        'generates a 10-byte random ID number')
     PCD_CalcCRC = (
-        0x03, 'activates the CRC coprocessor or performs a self-test')
-    PCD_Transmit = (0x04, 'transmits data from the FIFO buffer')
+        0x03,
+        'activates the CRC coprocessor or performs a self-test')
+    PCD_Transmit = (
+        0x04,
+        'transmits data from the FIFO buffer')
     PCD_NoCmdChange = (
-        0x07, 'no command change, can be used to modify the CommandReg register bits without affecting the command, for example, the PowerDown bit')
-    PCD_Receive = (0x08, 'activates the receiver circuits')
+        0x07,
+        'no command change, can be used to modify the CommandReg register bits without affecting the command,'
+        ' for example, the PowerDown bit')
+    PCD_Receive = (
+        0x08,
+        'activates the receiver circuits')
     PCD_Transceive = (
-        0x0C, 'transmits data from FIFO buffer to antenna and automatically activates the receiver after transmission')
+        0x0C,
+        'transmits data from FIFO buffer to antenna and automatically activates the receiver after transmission')
     PCD_MFAuthent = (
-        0x0E, 'performs the MIFARE standard authentication as a reader')
-    PCD_SoftReset = (0x0F, 'resets the MFRC522')
+        0x0E,
+        'performs the MIFARE standard authentication as a reader')
+    PCD_SoftReset = (
+        0x0F,
+        'resets the MFRC522')
 
     def __new__(cls, value,  description):
         obj = object.__new__(cls)
@@ -351,35 +404,61 @@ class PICC_Command(Enum):
     # The commands used by the PCD to manage communication with several PICCs
     # (ISO 14443-3, Type A, section 6.4)
     PICC_CMD_REQA = (
-        0x26, 'REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection. 7 bit frame.')
+        0x26,
+        'REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection.'
+        ' 7 bit frame.')
     PICC_CMD_WUPA = (
-        0x52, 'Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for anticollision or selection. 7 bit frame.')
+        0x52,
+        'Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for anticollision'
+        ' or selection. 7 bit frame.')
     PICC_CMD_CT = (
-        0x88, 'Cascade Tag. Not really a command, but used during anti collision.')
-    PICC_CMD_SEL_CL1 = (0x93, 'Anti collision/Select, Cascade Level 1')
-    PICC_CMD_SEL_CL2 = (0x95, 'Anti collision/Select, Cascade Level 2')
-    PICC_CMD_SEL_CL3 = (0x97, 'Anti collision/Select, Cascade Level 3')
+        0x88,
+        'Cascade Tag. Not really a command, but used during anti collision.')
+    PICC_CMD_SEL_CL1 = (
+        0x93,
+        'Anti collision/Select, Cascade Level 1')
+    PICC_CMD_SEL_CL2 = (
+        0x95,
+        'Anti collision/Select, Cascade Level 2')
+    PICC_CMD_SEL_CL3 = (
+        0x97,
+        'Anti collision/Select, Cascade Level 3')
     PICC_CMD_HLTA = (
-        0x50, 'HaLT command, Type A. Instructs an ACTIVE PICC to go to state HALT.')
-    PICC_CMD_RATS = (0xE0, 'Request command for Answer To Reset.')
+        0x50,
+        'HaLT command, Type A. Instructs an ACTIVE PICC to go to state HALT.')
+    PICC_CMD_RATS = (
+        0xE0,
+        'Request command for Answer To Reset.')
 
     # The commands used for MIFARE Classic (from http://www.mouser.com/ds/2/302/MF1S503x-89574.pdf, Section 9)
-    # Use PCD_MFAuthent to authenticate access to a sector, then use these commands to read/write/modify the blocks on the sector.
+    # Use PCD_MFAuthent to authenticate access to a sector, then use these commands to read/write/modify the blocks
+    # on the sector.
     # The read/write commands can also be used for MIFARE Ultralight.
-    PICC_CMD_MF_AUTH_KEY_A = (0x60, 'Perform authentication with Key A')
-    PICC_CMD_MF_AUTH_KEY_B = (0x61, 'Perform authentication with Key B')
+    PICC_CMD_MF_AUTH_KEY_A = (
+        0x60,
+        'Perform authentication with Key A')
+    PICC_CMD_MF_AUTH_KEY_B = (
+        0x61,
+        'Perform authentication with Key B')
     PICC_CMD_MF_READ = (
-        0x30, 'Reads one 16 byte block from the authenticated sector of the PICC. Also used for MIFARE Ultralight.')
+        0x30,
+        'Reads one 16 byte block from the authenticated sector of the PICC. Also used for MIFARE Ultralight.')
     PICC_CMD_MF_WRITE = (
-        0xA0, 'Writes one 16 byte block to the authenticated sector of the PICC. Called "COMPATIBILITY WRITE" for MIFARE Ultralight.')
+        0xA0,
+        'Writes one 16 byte block to the authenticated sector of the PICC. Called "COMPATIBILITY WRITE" for'
+        ' MIFARE Ultralight.')
     PICC_CMD_MF_DECREMENT = (
-        0xC0, 'Decrements the contents of a block and stores the result in the internal data register.')
+        0xC0,
+        'Decrements the contents of a block and stores the result in the internal data register.')
     PICC_CMD_MF_INCREMENT = (
-        0xC1, 'Increments the contents of a block and stores the result in the internal data register.')
+        0xC1,
+        'Increments the contents of a block and stores the result in the internal data register.')
     PICC_CMD_MF_RESTORE = (
-        0xC2, 'Reads the contents of a block into the internal data register.')
+        0xC2,
+        'Reads the contents of a block into the internal data register.')
     PICC_CMD_MF_TRANSFER = (
-        0xB0, 'Writes the contents of the internal data register to a block.')
+        0xB0,
+        'Writes the contents of the internal data register to a block.')
 
     # The commands used for MIFARE Ultralight (from http://www.nxp.com/documents/data_sheet/MF0ICU1.pdf, Section 8.6)
     # The PICC_CMD_MF_READ and PICC_CMD_MF_WRITE can also be used for MIFARE
@@ -464,7 +543,8 @@ class PICC_Type(Enum):
 
     def get_sector_definition(self, sector):
         '''
-        Returns the trailer block address, the block address for the first data block and the data block count
+        Returns the trailer block address, the block address for the first
+        data block and the data block count
         for the given sector.
 
         @param sector: The sector number
@@ -474,17 +554,20 @@ class PICC_Type(Enum):
         first_data_block_addr = 0
         data_block_count = 0
 
-        if sector == 0:                             # Sector 0 has 4 blocks, but only 3 data blocks, the first block contains manufacturer data
+        if sector == 0:
+            # Sector 0 has 4 blocks, but only 3 data blocks, the first block contains manufacturer data
             no_of_blocks = 4
             data_block_count = 2
             first_data_block_addr = 1
             sector_trailer_block_addr = 3
-        elif sector < 32:                           # Sectors 0..31 has 4 blocks each
+        elif sector < 32:
+            # Sectors 0..31 has 4 blocks each
             no_of_blocks = 4
             data_block_count = 3
             first_data_block_addr = sector * no_of_blocks
             sector_trailer_block_addr = first_data_block_addr + 3
-        elif sector < 40:                           # Sectors 32-39 has 16 blocks each
+        elif sector < 40:
+            # Sectors 32-39 has 16 blocks each
             no_of_blocks = 16
             data_block_count = 15
             first_data_block_addr = 128 + (sector - 32) * no_of_blocks
@@ -503,7 +586,8 @@ class PICC_Type(Enum):
 
 class StatusCode(Enum):
     '''
-    Return codes from the functions in this class. Remember to update GetStatusCodeName() if you add more.
+    Return codes from the functions in this class. Remember to update
+    GetStatusCodeName() if you add more.
     '''
 
     STATUS_OK = (0, 'Success')
@@ -540,9 +624,9 @@ class StatusCode(Enum):
         return self.description + ' ' + Enum.__str__(self)
 
 
-#=========================================================================
+# =========================================================================
 # UID and MIFARE KEY classes
-#=========================================================================
+# =========================================================================
 
 
 class Uid(object):
@@ -580,7 +664,7 @@ class Uid(object):
         # ignore 8-bit (iso14443 starts with LSBit = bit 1)
         # fixes wrong type for manufacturer Infineon
         # (http://nfc-tools.org/index.php?title=ISO14443A)
-        if self.sak != None:
+        if self.sak is not None:
             tmp_sak = self.sak & 0x7F
             try:
                 picc_type = PICC_Type(tmp_sak)
@@ -591,7 +675,8 @@ class Uid(object):
         return picc_type
 
     def __str__(self):
-        return '<UID: [{}], SAK: {:#04x}, Type: {}>'.format(format_hex(self.uid()), self.sak if self.sak else 0, self.get_picc_type())
+        return '<UID: [{}], SAK: {:#04x}, Type: {}>'.format(
+            format_hex(self.uid()), self.sak if self.sak else 0, self.get_picc_type())
 
 
 class MIFARE_Key(object):
@@ -606,9 +691,9 @@ class MIFARE_Key(object):
         return '<MIFARE_Key: [{}]>'.format(format_hex(self.key_byte))
 
 
-#=========================================================================
+# =========================================================================
 # MFRC522
-#=========================================================================
+# =========================================================================
 
 class MFRC522(object):
     '''
@@ -617,7 +702,8 @@ class MFRC522(object):
 
     # Firmware data for self-test
     # Reference values based on firmware version
-    # Hint: if needed, you can remove unused self-test data to save flash memory
+    # Hint: if needed, you can remove unused self-test data to save flash
+    # memory
     #
     # Version 0.0 (0x90)
     # Philips Semiconductors; Preliminary Specification Revision 2.0 - 01
@@ -691,9 +777,9 @@ class MFRC522(object):
 
         self.spi = spidev.SpiDev()
 
-    #=========================================================================
+    # =========================================================================
     # Basic interface functions for communicating with the MFRC522
-    #=========================================================================
+    # =========================================================================
 
     def _spi_transfer(self, data):
         '''
@@ -725,7 +811,8 @@ class MFRC522(object):
         '''
         if self.__log_spi:
             logger_spi.debug(
-                _F('write_register \'{reg_name}\': [{reg_val:#04x} {val:#04x}]', reg_name=reg.name, reg_val=reg.value, val=val))
+                _F('write_register \'{reg_name}\': [{reg_val:#04x} {val:#04x}]',
+                   reg_name=reg.name, reg_val=reg.value, val=val))
 
         self._spi_transfer([reg.value, val])
 
@@ -739,7 +826,8 @@ class MFRC522(object):
         '''
         if self.__log_spi:
             logger_spi.debug(
-                _F('write_register2 \'{reg_name}\': [{reg_val:#04x} {values}]', reg_name=reg.name, reg_val=reg.value, values=format_hex(vals)))
+                _F('write_register2 \'{reg_name}\': [{reg_val:#04x} {values}]',
+                   reg_name=reg.name, reg_val=reg.value, values=format_hex(vals)))
 
         self._spi_transfer([reg.value] + vals)
 
@@ -757,7 +845,8 @@ class MFRC522(object):
 
         if self.__log_spi:
             logger_spi.debug(
-                _F('read_register \'{reg_name}\': {reg_val:#04x} result: [{result:#04x}]', reg_name=reg.name, reg_val=reg.value, result=result))
+                _F('read_register \'{reg_name}\': {reg_val:#04x} result: [{result:#04x}]',
+                   reg_name=reg.name, reg_val=reg.value, result=result))
 
         return result
 
@@ -814,7 +903,8 @@ class MFRC522(object):
 
         if self.__log_spi:
             logger_spi.debug(
-                _F('read_register2 \'{reg_name}\': {reg_val:#04x}, count: {count}, rx_align: {rx_align}, result: [{values}]', reg_name=reg.name, reg_val=reg.value, count=count, rx_align=rx_align, values=format_hex(rx)))
+                _F('read_register2 \'{reg_name}\': {reg_val:#04x}, count: {count}, rx_align: {rx_align}, result: [{values}]',
+                   reg_name=reg.name, reg_val=reg.value, count=count, rx_align=rx_align, values=format_hex(rx)))
 
         return rx
 
@@ -842,7 +932,8 @@ class MFRC522(object):
         '''
         Use the CRC coprocessor in the MFRC522 to calculate a CRC_A.
 
-        Returns STATUS_OK on success, STATUS_TIMEOUT if the CRC calculation did not complete in time (communication with the MFRC522 might be down)
+        Returns STATUS_OK on success, STATUS_TIMEOUT if the CRC calculation did not complete in time
+        (communication with the MFRC522 might be down)
 
         @param data: The data to transfer to the FIFO for CRC calculation (list of bytes to transfer).
         @return: (StatusCode, result) - result is exactly 2 bytes long
@@ -889,9 +980,9 @@ class MFRC522(object):
                 'Timeout during CRC_A calculation. Communication with the MFRC522 might be down')
         return StatusCode.STATUS_TIMEOUT, None
 
-    #=========================================================================
+    # =========================================================================
     # Functions for manipulating the MFRC522
-    #=========================================================================
+    # =========================================================================
 
     def pcd_init(self):
         '''
@@ -903,7 +994,8 @@ class MFRC522(object):
         # Setup SPI
         if self.__log_debug:
             logger_debug.info(
-                _F('Init spidev with bus={bus}, device={device}, speed={speed}', bus=self.bus, device=self.device, speed=self.speed))
+                _F('Init spidev with bus={bus}, device={device}, speed={speed}',
+                   bus=self.bus, device=self.device, speed=self.speed))
 
         self.spi.open(self.bus, self.device)
         self.spi.max_speed_hz = self.speed
@@ -915,7 +1007,7 @@ class MFRC522(object):
         GPIO.setmode(self.pin_mode)
         if self.pin_irq != 0:
             GPIO.setup(self.pin_irq, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        #GPIO.add_event_detect(self.pin_irq, GPIO.FALLING, callback=self.IRQ_Callback)
+        # GPIO.add_event_detect(self.pin_irq, GPIO.FALLING, callback=self.IRQ_Callback)
         if self.pin_ce != 0:
             GPIO.setup(self.pin_ce, GPIO.OUT)
             GPIO.output(self.pin_ce, 1)
@@ -1157,9 +1249,9 @@ class MFRC522(object):
         # Test passed; all is good.
         return True
 
-    #=========================================================================
+    # =========================================================================
     # Power control
-    #=========================================================================
+    # =========================================================================
 
     # IMPORTANT NOTE!!!!
     # Calling any other function that uses CommandReg will disable soft power down mode !!!
@@ -1202,9 +1294,9 @@ class MFRC522(object):
                 # wake up procedure is finished
                 break
 
-    #=========================================================================
+    # =========================================================================
     # Functions for communicating with PICCs
-    #=========================================================================
+    # =========================================================================
 
     def pcd_transceive_data(self, send_data, wants_back_data=False, tx_valid_bits=0, rx_align=0, check_crc=False):
         '''
@@ -1222,9 +1314,11 @@ class MFRC522(object):
             logger_trace.debug('>> pcd_transceive_data')
 
         wait_irq = 0x30     # RxIRq and IdleIRq
-        return self.pcd_communicate_with_picc(PCD_Command.PCD_Transceive, wait_irq, send_data, wants_back_data, tx_valid_bits, rx_align, check_crc)
+        return self.pcd_communicate_with_picc(
+            PCD_Command.PCD_Transceive, wait_irq, send_data, wants_back_data, tx_valid_bits, rx_align, check_crc)
 
-    def pcd_communicate_with_picc(self, command, wait_irq, send_data, wants_back_data, tx_valid_bits, rx_align=0, check_crc=False):
+    def pcd_communicate_with_picc(self, command, wait_irq, send_data, wants_back_data, tx_valid_bits,
+                                  rx_align=0, check_crc=False):
         '''
         Transfers data to the MFRC522 FIFO, executes a command, waits for completion and transfers data back from the FIFO.
         CRC validation can only be done if backData and backLen are specified.
@@ -1264,7 +1358,8 @@ class MFRC522(object):
             self.pcd_set_register_bitmask(PCD_Register.BitFramingReg, 0x80)
 
         # Wait for the command to complete.
-        # In PCD_Init() we set the TAuto flag in TModeReg. This means the timer automatically starts when the PCD stops transmitting.
+        # In PCD_Init() we set the TAuto flag in TModeReg. This means the timer automatically starts
+        # when the PCD stops transmitting.
         #    // Arduino Uno 16bit
         #    // Wait for the command to complete. Each iteration of the while-loop takes 17.73us.
         #    for (i = 2000; i > 0; i--) { ... }
@@ -1283,7 +1378,8 @@ class MFRC522(object):
         if i == 0:
             if self.__log_debug:
                 logger_debug.warn(
-                    _F('Timeout during communication with PICC (Command={}). Communication with the MFRC522 might be down', command.name))
+                    _F('Timeout during communication with PICC (Command={}). Communication with the MFRC522 might be down',
+                       command.name))
             return StatusCode.STATUS_TIMEOUT, None, None
 
         # Stop now if any errors except collisions were detected.
@@ -1293,7 +1389,8 @@ class MFRC522(object):
         if error_reg_value & 0x13:                                              # BufferOvfl ParityErr ProtocolErr
             if self.__log_debug:
                 logger_debug.warn(
-                    _F('Error detected during communication with PICC (Command={}). Error register value: {:#04x}', command.name, error_reg_value))
+                    _F('Error detected during communication with PICC (Command={}). Error register value: {:#04x}',
+                       command.name, error_reg_value))
             return StatusCode.STATUS_ERROR, None, None
 
         rx_valid_bits = 0
@@ -1320,7 +1417,8 @@ class MFRC522(object):
         if error_reg_value & 0x08:        # CollErr
             if self.__log_debug:
                 logger_debug.debug(
-                    _F('Collision detected during communication with PICC (Command={}). Error register value: {:#04x}', command.name, error_reg_value))
+                    _F('Collision detected during communication with PICC (Command={}). Error register value: {:#04x}',
+                       command.name, error_reg_value))
             return StatusCode.STATUS_COLLISION, rx_back_data, rx_valid_bits
 
         # Perform CRC_A validation if requested.
@@ -1339,7 +1437,8 @@ class MFRC522(object):
             if rx_back_data_len < 2 or rx_valid_bits != 0:
                 if self.__log_debug:
                     logger_debug.warn(
-                        _F('Not enough bits for CRC_A calculation received from communication with PICC (Command={})', command.name))
+                        _F('Not enough bits for CRC_A calculation received from communication with PICC (Command={})',
+                           command.name))
                 return StatusCode.STATUS_CRC_WRONG, rx_back_data, rx_valid_bits
             # Verify CRC_A - do our own calculation and store the control in
             # controlBuffer.
@@ -1347,18 +1446,24 @@ class MFRC522(object):
                 rx_back_data[:rx_back_data_len - 2])
             if status != StatusCode.STATUS_OK:
                 return status, rx_back_data, rx_valid_bits
-            if (rx_back_data[rx_back_data_len - 2] != control_buffer[0]) or (rx_back_data[rx_back_data_len - 1] != control_buffer[1]):
+            if ((rx_back_data[rx_back_data_len - 2] != control_buffer[0]) or
+                    (rx_back_data[rx_back_data_len - 1] != control_buffer[1])):
                 if self.__log_debug:
-                    logger_debug.warn(_F('Wrong CRC_A value received from communication with PICC (Command: {}, expected: [ {:#04x} {:#04x} ], actual: [ {:#04x} {:#04x} ])',
-                                         command.name, rx_back_data[rx_back_data_len - 2], rx_back_data[rx_back_data_len - 1], control_buffer[0], control_buffer[1]))
+                    logger_debug.warn(
+                        _F('Wrong CRC_A value received from communication with PICC (Command: {},'
+                           ' expected: [ {:#04x} {:#04x} ], actual: [ {:#04x} {:#04x} ])',
+                           command.name, rx_back_data[rx_back_data_len - 2], rx_back_data[rx_back_data_len - 1],
+                           control_buffer[0], control_buffer[1]))
                 return StatusCode.STATUS_CRC_WRONG, None, None
 
         return StatusCode.STATUS_OK, rx_back_data, rx_valid_bits
 
     def picc_request_a(self):
         '''
-        Transmits a REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or selection. 7 bit frame.
-        Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
+        Transmits a REQuest command, Type A. Invites PICCs in state IDLE to go to READY and prepare for anticollision or
+        selection. 7 bit frame.
+        Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad
+        antenna design.
 
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
         '''
@@ -1369,8 +1474,10 @@ class MFRC522(object):
 
     def picc_wakeup_a(self):
         '''
-        Transmits a Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for anticollision or selection. 7 bit frame.
-        Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
+        Transmits a Wake-UP command, Type A. Invites PICCs in state IDLE and HALT to go to READY(*) and prepare for
+        anticollision or selection. 7 bit frame.
+        Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad
+        antenna design.
 
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
         '''
@@ -1382,7 +1489,8 @@ class MFRC522(object):
     def picc_reqa_or_wupa(self, command):
         '''
         Transmits REQA or WUPA commands.
-        Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad antenna design.
+        Beware: When two PICCs are in the field at the same time I often get STATUS_TIMEOUT - probably due do bad
+        antenna design.
 
         @param command: The command to send - PICC_CMD_REQA or PICC_CMD_WUPA
         @return: (StatusCode, rx_back_data) - rx_back_data contains the ATQA (Answer to request, exactly 16 bits)
@@ -1404,9 +1512,11 @@ class MFRC522(object):
     def picc_select(self, uid=None, rx_valid_bits=0):
         '''
         Transmits SELECT/ANTICOLLISION commands to select a single PICC.
-        Before calling this function the PICCs must be placed in the READY(*) state by calling PICC_RequestA() or PICC_WakeupA().
+        Before calling this function the PICCs must be placed in the READY(*) state by calling PICC_RequestA()
+        or PICC_WakeupA().
         On success:
-                - The chosen PICC is in state ACTIVE(*) and all other PICCs have returned to state IDLE/HALT. (Figure 7 of the ISO/IEC 14443-3 draft.)
+                - The chosen PICC is in state ACTIVE(*) and all other PICCs have returned to state IDLE/HALT.
+                (Figure 7 of the ISO/IEC 14443-3 draft.)
                 - The UID size and value of the chosen PICC is returned in *uid along with the SAK.
 
         A PICC UID consists of 4, 7 or 10 bytes.
@@ -1435,8 +1545,8 @@ class MFRC522(object):
         # The first index in uid->uidByte[] that is used in the current Cascade
         # Level.
         uid_index = 0
-        # int8_t currentLevelKnownBits;        // The number of known UID bits in the current Cascade Level.
-        # byte _buffer[9];                    // The SELECT/ANTICOLLISION
+        # int8_t currentLevelKnownBits;    // The number of known UID bits in the current Cascade Level.
+        # byte _buffer[9];                 // The SELECT/ANTICOLLISION
         # commands uses a 7 byte standard frame + 2 bytes CRC_A
         # The SELECT/ANTICOLLISION commands uses a 7 byte standard frame + 2
         # bytes CRC_A
@@ -1445,18 +1555,20 @@ class MFRC522(object):
         # transfer to the FIFO.
         buffer_used = 0
         # byte rxAlign;                    // Used in BitFramingReg. Defines the bit position for the first bit received.
-        # byte txLastBits;                // Used in BitFramingReg. The number of valid bits in the last transmitted byte.
+        # byte txLastBits;                 // Used in BitFramingReg. The number of valid bits in the last transmitted byte.
         # byte *responseBuffer;
         # byte responseLength;
 
         # Description of _buffer structure:
-        #        Byte 0: SEL                 Indicates the Cascade Level: PICC_CMD_SEL_CL1, PICC_CMD_SEL_CL2 or PICC_CMD_SEL_CL3
-        #        Byte 1: NVB                    Number of Valid Bits (in complete command, not just the UID): High nibble: complete bytes, Low nibble: Extra bits.
-        #        Byte 2: UID-data or CT        See explanation below. CT means Cascade Tag.
+        #        Byte 0: SEL                 Indicates the Cascade Level: PICC_CMD_SEL_CL1, PICC_CMD_SEL_CL2
+        #                                    or PICC_CMD_SEL_CL3
+        #        Byte 1: NVB                 Number of Valid Bits (in complete command, not just the UID):
+        #                                    High nibble: complete bytes, Low nibble: Extra bits.
+        #        Byte 2: UID-data or CT      See explanation below. CT means Cascade Tag.
         #        Byte 3: UID-data
         #        Byte 4: UID-data
         #        Byte 5: UID-data
-        #        Byte 6: BCC                    Block Check Character - XOR of bytes 2-5
+        #        Byte 6: BCC                 Block Check Character - XOR of bytes 2-5
         #        Byte 7: CRC_A
         #        Byte 8: CRC_A
         # The BCC and CRC_A are only transmitted if we know all the UID bits of the current Cascade Level.
@@ -1550,7 +1662,8 @@ class MFRC522(object):
                 if current_level_known_bits >= 32:
                     if self.__log_trace:
                         logger_trace.debug(
-                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration: all UID bits ({}) in cascade level are known --> SELECT', current_level_known_bits))
+                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration: all UID bits ({})'
+                               ' in cascade level are known --> SELECT', current_level_known_bits))
                     # Serial.print(F("SELECT: currentLevelKnownBits=")); Serial.println(currentLevelKnownBits, DEC);
                     # NVB - Number of Valid Bits: Seven whole bytes
                     _buffer[1] = 0x70
@@ -1562,7 +1675,8 @@ class MFRC522(object):
                     if status != StatusCode.STATUS_OK:
                         if self.__log_debug:
                             logger_debug.error(
-                                _F('Error occured in picc_select anti collision loop. Calculation of CRC_A not OK: {}', status.name))
+                                _F('Error occured in picc_select anti collision loop. Calculation of CRC_A not OK: {}',
+                                   status.name))
                         return status, _uid
                     _buffer[7] = crc_result[0]
                     _buffer[8] = crc_result[1]
@@ -1575,7 +1689,8 @@ class MFRC522(object):
                 else:   # This is an ANTICOLLISION.
                     if self.__log_trace:
                         logger_trace.debug(
-                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration: (current_level_known_bits={}) --> ANTICOLLISION', current_level_known_bits))
+                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration:'
+                               ' (current_level_known_bits={}) --> ANTICOLLISION', current_level_known_bits))
                     # Serial.print(F("ANTICOLLISION: currentLevelKnownBits=")); Serial.println(currentLevelKnownBits, DEC);
                     tx_last_bits = current_level_known_bits % 8
                     # Number of whole bytes in the UID part.
@@ -1602,22 +1717,26 @@ class MFRC522(object):
                     _buffer[:buffer_used], True, tx_last_bits, rx_align)
                 if _rx_back_data:
                     if self.__log_trace:
-                        logger_trace.debug(_F('>> picc_select: cascade loop iteration: anti collision loop iteration: copy data. data: [{}], buffer_index: {}', format_hex(
-                            _rx_back_data), response_buffer_index))
+                        logger_trace.debug(
+                            _F('>> picc_select: cascade loop iteration: anti collision loop iteration:'
+                               ' copy data. data: [{}], buffer_index: {}', format_hex(_rx_back_data), response_buffer_index))
                     # copy _rx_back_data into _buffer starting from
                     # response_buffer_index
                     for i in range(len(_rx_back_data)):
                         _buffer[response_buffer_index + i] = _rx_back_data[i]
                 else:
                     if self.__log_debug:
-                        logger_debug.warn(_F('No back data received from transceive_data in picc_select anti collision loop. buffer: [{}], used: {}, tx_last_bits: {}, rx_align: {}', format_hex(
-                            _buffer), buffer_used, tx_last_bits, rx_align))
+                        logger_debug.warn(
+                            _F('No back data received from transceive_data in picc_select anti collision loop.'
+                               ' buffer: [{}], used: {}, tx_last_bits: {}, rx_align: {}',
+                               format_hex(_buffer), buffer_used, tx_last_bits, rx_align))
 
                 # More than one PICC in the field => collision.
                 if status == StatusCode.STATUS_COLLISION:
                     if self.__log_trace:
                         logger_trace.debug(
-                            '>> picc_select: cascade loop iteration: anti collision loop iteration: more than one PICC in field --> collision')
+                            '>> picc_select: cascade loop iteration: anti collision loop iteration: more than one'
+                            ' PICC in field --> collision')
                     # CollReg[7..0] bits are: ValuesAfterColl reserved
                     # CollPosNotValid CollPos[4:0]
                     value_of_col_reg = self.pcd_read_register(
@@ -1635,7 +1754,9 @@ class MFRC522(object):
                     if collision_pos <= current_level_known_bits:                          # No progress - should not happen
                         if self.__log_debug:
                             logger_debug.error(
-                                _F('Error occured in picc_select anti collision loop. No progress collision_pos ({}) < current_level_known_bits ({})', collision_pos, current_level_known_bits))
+                                _F('Error occured in picc_select anti collision loop.'
+                                   ' No progress collision_pos ({}) < current_level_known_bits ({})',
+                                   collision_pos, current_level_known_bits))
                         return StatusCode.STATUS_INTERNAL_ERROR, _uid
                     # Choose the PICC with the bit set.
                     current_level_known_bits = collision_pos
@@ -1649,7 +1770,8 @@ class MFRC522(object):
                 elif status != StatusCode.STATUS_OK:
                     if self.__log_debug:
                         logger_debug.error(
-                            _F('Error occured in picc_select anti collision loop. pcd_transceive_data returned NOT OK ({})', status.name))
+                            _F('Error occured in picc_select anti collision loop. pcd_transceive_data returned NOT OK ({})',
+                               status.name))
                     return status, _uid
                 else:                                                                       # STATUS_OK
                     if self.__log_trace:
@@ -1687,7 +1809,9 @@ class MFRC522(object):
             if response_length != 3 or tx_last_bits != 0:
                 if self.__log_debug:
                     logger_debug.error(
-                        _F('Error occured in picc_select cascade loop. Response SAK (Select Acknowledge) is not exactly 24 bits (SAK bits: {}, SAK valid last bits: {})', response_length * 8, tx_last_bits))
+                        _F('Error occured in picc_select cascade loop. Response SAK (Select Acknowledge)'
+                           ' is not exactly 24 bits (SAK bits: {}, SAK valid last bits: {})',
+                           response_length * 8, tx_last_bits))
                 return StatusCode.STATUS_ERROR, _uid
             # Verify CRC_A - do our own calculation and store the control in
             # _buffer[2..3] - those bytes are not needed anymore.
@@ -1754,18 +1878,21 @@ class MFRC522(object):
             return StatusCode.STATUS_ERROR
         return result
 
-    #=========================================================================
+    # =========================================================================
     # Functions for communicating with MIFARE PICCs
-    #=========================================================================
+    # =========================================================================
 
     def pcd_authenticate(self, command, block_addr, key, uid):
         '''
         Executes the MFRC522 MFAuthent command.
-        This command manages MIFARE authentication to enable a secure communication to any MIFARE Mini, MIFARE 1K and MIFARE 4K card.
-        The authentication is described in the MFRC522 datasheet section 10.3.1.9 and http://www.nxp.com/documents/data_sheet/MF1S503x.pdf section 10.1.
+        This command manages MIFARE authentication to enable a secure communication to any MIFARE Mini,
+        MIFARE 1K and MIFARE 4K card.
+        The authentication is described in the MFRC522 datasheet section 10.3.1.9 and
+        http://www.nxp.com/documents/data_sheet/MF1S503x.pdf section 10.1.
         For use with MIFARE Classic PICCs.
         The PICC must be selected - ie in state ACTIVE(*) - before calling this function.
-        Remember to call PCD_StopCrypto1() after communicating with the authenticated PICC - otherwise no new communications can start.
+        Remember to call PCD_StopCrypto1() after communicating with the authenticated PICC - otherwise
+        no new communications can start.
 
         All keys are set to FFFFFFFFFFFFh at chip delivery.
 
@@ -1801,7 +1928,8 @@ class MFRC522(object):
     def pcd_stop_crypto1(self):
         '''
         Used to exit the PCD from its authenticated state.
-        Remember to call this function after communicating with an authenticated PICC - otherwise no new communications can start.
+        Remember to call this function after communicating with an authenticated PICC - otherwise
+        no new communications can start.
         '''
         if self.__log_trace:
             logger_trace.debug('>> pcd_stop_crypto1')
@@ -1819,7 +1947,8 @@ class MFRC522(object):
 
         For MIFARE Ultralight only addresses 00h to 0Fh are decoded.
         The MF0ICU1 returns a NAK for higher addresses.
-        The MF0ICU1 responds to the READ command by sending 16 bytes starting from the page address defined by the command argument.
+        The MF0ICU1 responds to the READ command by sending 16 bytes starting from the page address defined
+        by the command argument.
         For example; if blockAddr is 03h then pages 03h, 04h, 05h, 06h are returned.
         A roll-back is implemented: If blockAddr is 0Eh, then the contents of pages 0Eh, 0Fh, 00h and 01h are returned.
 
@@ -2024,7 +2153,7 @@ class MFRC522(object):
 
         Only for MIFARE Classic and only for blocks in "value block" mode, that
         is: with access bits [C1 C2 C3] = [110] or [001]. The sector containing
-        the block must be authenticated before calling this function. 
+        the block must be authenticated before calling this function.
 
         @param block_addr: The block (0x00-0xff) number.
         @param[out]  value       Current value of the Value Block.
@@ -2048,7 +2177,7 @@ class MFRC522(object):
 
         Only for MIFARE Classic and only for blocks in "value block" mode, that
         is: with access bits [C1 C2 C3] = [110] or [001]. The sector containing
-        the block must be authenticated before calling this function. 
+        the block must be authenticated before calling this function.
 
         @param block_addre: The block (0x00-0xff) number.
         @param value: New value of the Value Block.
@@ -2079,9 +2208,9 @@ class MFRC522(object):
     # MFRC522::PCD_NTAG216_AUTH(byte* passWord, byte pACK[]) //Authenticate
     # with 32bit password
 
-    #=========================================================================
+    # =========================================================================
     # Support functions
-    #=========================================================================
+    # =========================================================================
 
     def pcd_mifare_transceive(self, send_data, accept_timeout=False):
         '''
@@ -2096,14 +2225,14 @@ class MFRC522(object):
             logger_trace.debug('>> pcd_mifare_transceive')
 
         # We need room for 16 bytes data and 2 bytes CRC_A.
-        _cmd_buffer = [0] * 18
+        # _cmd_buffer = [0] * 18
 
         # Sanity check
         if not send_data or len(send_data) > 16:
             return StatusCode.STATUS_INVALID
 
         # Copy sendData[] to cmdBuffer[] and add CRC_A
-        #memcpy(cmdBuffer, sendData, sendLen);
+        # memcpy(cmdBuffer, sendData, sendLen);
         result, crc_result = self.pcd_calulate_crc(send_data)
         if result != StatusCode.STATUS_OK:
             return result
@@ -2192,7 +2321,7 @@ class MFRC522(object):
         '''
         Dumps debug info about the selected PICC to Serial.
         On success the PICC is halted after dumping the data.
-        For MIFARE Classic the factory default key of 0xFFFFFFFFFFFF is tried.  
+        For MIFARE Classic the factory default key of 0xFFFFFFFFFFFF is tried.
 
         @param uid: Pointer to Uid struct returned from a successful PICC_Select().
         @deprecated: Kept for bakward compatibility
@@ -2441,9 +2570,9 @@ class MFRC522(object):
 
     # TODO missing functions
 
-    #=========================================================================
+    # =========================================================================
     # Convenience functions - does not add extra functionality
-    #=========================================================================
+    # =========================================================================
 
     def picc_is_new_card_present(self):
         '''
@@ -2467,7 +2596,7 @@ class MFRC522(object):
     def picc_is_card_present(self):
         '''
         Returns true if a PICC responds to PICC_CMD_WUPA.
-        Cards in state IDLE or HALT are invited. 
+        Cards in state IDLE or HALT are invited.
 
         @return: boolean
         '''
@@ -2499,9 +2628,9 @@ class MFRC522(object):
         return result == StatusCode.STATUS_OK, uid
 
 
-#=========================================================================
+# =========================================================================
 # Helper functions for the python version of MFRC522
-#=========================================================================
+# =========================================================================
 
 
 # Helper function to suspend executen for x microsecends

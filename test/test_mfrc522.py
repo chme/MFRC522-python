@@ -16,8 +16,8 @@ sys.modules['RPi.GPIO'] = mock.MagicMock()
 sys.modules['spidev'] = mock.MagicMock()
 
 # After mocking libraries import the system under test (sut)
-from mfrc522 import MFRC522
-from mfrc522 import PCD_Firmware
+from mfrc522 import MFRC522                 # noqa
+from mfrc522 import PCD_Firmware            # noqa
 
 
 class TestMFRC522(unittest.TestCase):
@@ -77,5 +77,5 @@ class TestMFRC522(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'TestMFRC522.testName']
+    # import sys;sys.argv = ['', 'TestMFRC522.testName']
     unittest.main()

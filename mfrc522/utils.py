@@ -37,7 +37,7 @@ class FormatString(object):
     def __str__(self):
         try:
             message = self.fmt.format(*self.args, **self.kwargs)
-        except:
+        except Exception:
             message = 'ERROR creating log message! ' + "\n" + traceback.format_exc()
         return message
 
@@ -48,6 +48,6 @@ def format_hex(data):
     '''
     try:
         result = ' '.join(format(x, '#04x') for x in data)
-    except:
+    except Exception:
         result = 'ERROR: {} is not a HEX list'.format(data)
     return result

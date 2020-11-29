@@ -1,2 +1,5 @@
 RPi.GPIO>=0.6.5
 spidev>=3.2
+pytest
+flake8
+cmd2

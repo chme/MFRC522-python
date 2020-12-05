@@ -1,7 +1,7 @@
 import argparse
 import cmd2
 import RPi.GPIO as GPIO
-from mfrc522 import SimpleMFRC522
+from .mfrc522 import SimpleMFRC522
 
 
 class MFRC522_Cli(cmd2.Cmd):

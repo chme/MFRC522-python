@@ -13,11 +13,11 @@ class MFRC522_Cli(cmd2.Cmd):
 
     def do_version(self, args):
         firmware = self.rfid.firmware_version()
-        self.poutput('Firmware Version: {:#x} = {}'.format(firmware.value, firmware.name))
+        self.poutput('Firmware Version: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
 
     def do_selftest(self, args):
         firmware = self.rfid.firmware_version()
-        self.poutput('Firmware Version: {:#x} = {}'.format(firmware.value, firmware.name))
+        self.poutput('Firmware Version: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
 
         result = self.rfid.selftest()
         self.poutput('Selftest Result: {}'.format('OK' if result else 'DEFECT or UNKNOWN'))

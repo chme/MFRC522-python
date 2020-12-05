@@ -2,13 +2,23 @@ import argparse
 import cmd2
 import RPi.GPIO as GPIO
 from .simple_mfrc522 import SimpleMFRC522
+from cmd2 import style, fg
 
 
 class MFRC522_Cli(cmd2.Cmd):
 
     def __init__(self, rfid):
-        super().__init__()
+        super().__init__(allow_cli_args=False)
 
+        self.intro = style('''
+
+█▀▄▀█ █▀▀ █▀▀█ █▀▀ █▀▀ █▀█ █▀█
+█░▀░█ █▀▀ █▄▄▀ █░░ ▀▀▄ ░▄▀ ░▄▀
+▀░░░▀ ▀░░ ▀░▀▀ ▀▀▀ ▄▄▀ █▄▄ █▄▄
+
+''', fg=fg.blue)
+
+        self.prompt = style('➜ ', fg=fg.green, bold=True)
         self.rfid = rfid
 
     def do_version(self, args):
@@ -41,6 +51,10 @@ def main():
     arg_parser.add_argument('-i', '--pin_irq', type=int, help='The GPIO IRQ pin number (default = 24)', default=24)
     arg_parser.add_argument('-m', '--pin_mode', type=int,
                             help='GPIO pin numbering mode (default = GPIO.BCM)', default=GPIO.BCM)
+    arg_parser.add_argument('command', nargs='?',
+                            help='optional command to run, if no command given, enter an interactive shell')
+    arg_parser.add_argument('command_args', nargs=argparse.REMAINDER,
+                            help='optional arguments for command')
     args = arg_parser.parse_args()
 
     try:
@@ -49,7 +63,12 @@ def main():
         rfid.init()
 
         cli = MFRC522_Cli(rfid)
-        cli.cmdloop()
+        if args.command:
+            # we have a command, run it and then exit
+            cli.onecmd_plus_hooks('{} {}'.format(args.command, ' '.join(args.command_args)))
+        else:
+            # we have no command, drop into interactive mode
+            cli.cmdloop()
     finally:
         rfid.cleanup()
 

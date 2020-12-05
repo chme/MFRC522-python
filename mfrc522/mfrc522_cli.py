@@ -29,8 +29,7 @@ class MFRC522_Cli(cmd2.Cmd):
         pass
 
 
-if __name__ == '__main__':
-
+def main():
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-b', '--bus', type=int, help='The SPI bus (default = 0)', default=0)
     arg_parser.add_argument('-d', '--device', type=int, help='The SPI device (default = 0)', default=0)
@@ -53,3 +52,7 @@ if __name__ == '__main__':
         cli.cmdloop()
     finally:
         rfid.cleanup()
+
+
+if __name__ == '__main__':
+    main()

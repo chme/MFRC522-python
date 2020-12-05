@@ -14,6 +14,8 @@ from .mfrc522 import (
 
 from .simple_mfrc522 import SimpleMFRC522
 
+from .mfrc522_cli import MFRC522_Cli
+
 from .utils import (
     FormatString,
     format_hex

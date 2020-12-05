@@ -41,7 +41,7 @@ def main():
     arg_parser.add_argument('-i', '--pin_irq', type=int, help='The GPIO IRQ pin number (default = 24)', default=24)
     arg_parser.add_argument('-m', '--pin_mode', type=int,
                             help='GPIO pin numbering mode (default = GPIO.BCM)', default=GPIO.BCM)
-    args = arg_parser.parse_args
+    args = arg_parser.parse_args()
 
     try:
         rfid = SimpleMFRC522(bus=args.bus, device=args.device, speed=args.speed, pin_reset=args.pin_reset,

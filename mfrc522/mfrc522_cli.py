@@ -21,11 +21,20 @@ class MFRC522_Cli(cmd2.Cmd):
         self.prompt = style('➜ ', fg=fg.green, bold=True)
         self.rfid = rfid
 
+        delattr(cmd2.Cmd, 'do_shell')
+        delattr(cmd2.Cmd, 'do_py')
+
     def do_version(self, args):
+        '''
+        Read firmware version from rfid reader
+        '''
         firmware = self.rfid.firmware_version()
         self.poutput('Firmware Version: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
 
     def do_selftest(self, args):
+        '''
+        Read firmware version and run selftest for supported rfid reader
+        '''
         firmware = self.rfid.firmware_version()
         self.poutput('Firmware Version: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
 

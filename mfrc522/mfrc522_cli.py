@@ -2,11 +2,12 @@ import argparse
 import cmd2
 import RPi.GPIO as GPIO
 from .simple_mfrc522 import SimpleMFRC522
-from cmd2 import style, fg
+from cmd2 import style, fg, with_category
 import logging
 
 
 class MFRC522_Cli(cmd2.Cmd):
+    CMD_CAT_MFRC = 'MFRC522'
 
     def __init__(self, rfid):
         super().__init__(allow_cli_args=False)
@@ -25,9 +26,19 @@ Enter command(s), to see a list of available commands enter "help -v", to exit e
         self.prompt = style('➜ ', fg=fg.green, bold=True)
         self.rfid = rfid
 
+        # Remove shell and python shell commands
         delattr(cmd2.Cmd, 'do_shell')
         delattr(cmd2.Cmd, 'do_py')
 
+        # Hide some other builtin commands
+        self.hidden_commands.append('alias')
+        self.hidden_commands.append('edit')
+        self.hidden_commands.append('macro')
+        self.hidden_commands.append('run_pyscript')
+        self.hidden_commands.append('run_script')
+        self.hidden_commands.append('shortcuts')
+
+    @with_category(CMD_CAT_MFRC)
     def do_version(self, args):
         '''
         Read firmware version from rfid reader
@@ -35,21 +46,57 @@ Enter command(s), to see a list of available commands enter "help -v", to exit e
         firmware = self.rfid.firmware_version()
         self.poutput('Firmware Version: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
 
+    @with_category(CMD_CAT_MFRC)
     def do_selftest(self, args):
         '''
         Read firmware version and run selftest for supported rfid reader
         '''
         firmware = self.rfid.firmware_version()
-        self.poutput('Firmware Version: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
+        self.poutput('Reader firmware: {:#x} = {} - {}'.format(firmware.value, firmware.version, firmware.description))
 
         result = self.rfid.selftest()
-        self.poutput('Selftest Result: {}'.format('OK' if result else 'DEFECT or UNKNOWN'))
+        if result:
+            self.poutput(style('Selftest finished successfully', fg=fg.green))
+        else:
+            self.perror('Selftest failed, reader is either unsupported or unknown')
 
-    def do_read(self, args):
-        pass
+    @with_category(CMD_CAT_MFRC)
+    def do_check_card_present(self, args):
+        '''
+        Checks if a card (PICC) is present (PICC state can be IDLE or HALT)
+        (Sends a PICC_CMD_WUPA and checks if a PICC responds)
+        '''
+        result = self.rfid.is_card_present()
+        self.poutput('{}'.format('Card is present' if result else 'No cards found'))
 
-    def do_write(self, args):
-        pass
+    @with_category(CMD_CAT_MFRC)
+    def do_check_new_card_present(self, args):
+        '''
+        Checks if a new card (PICC) is present (only PICC in state IDLE are invited)
+        (Sends a PICC_CMD_REQA and checks if a PICC responds)
+        '''
+        result = self.rfid.is_new_card_present()
+        self.poutput('{}'.format('Card found' if result else 'No cards found'))
+
+    @with_category(CMD_CAT_MFRC)
+    def do_read_uid(self, args):
+        '''
+        Checks if a card (PICC) is present (state IDLE or HALT), puts it into the READY state
+        and transmits the SELECT/ANTICOLLISION commands to read the UID
+        '''
+        result = self.rfid.is_card_present()
+
+        if not result:
+            self.poutput('No card found')
+            return
+
+        result, uid = self.rfid.read_card_serial()
+        if result:
+            self.poutput(style('Card "{}" found with uid: {}'.format(
+                uid.get_picc_type().get_name(), uid.to_num()), fg=fg.green))
+            self.rfid.rfid.picc_halt_a()
+        else:
+            self.perror('Error reading card: {}'.format(result))
 
 
 def setupLogger(name, log_level):

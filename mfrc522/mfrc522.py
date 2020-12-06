@@ -136,7 +136,7 @@ MIFARE Ultralight C (MF0ICU2):
 '''
 
 
-logger_debug = logging.getLogger('mfrc522.log')
+logger_mfrc = logging.getLogger('mfrc522.log')
 logger_trace = logging.getLogger('mfrc522.trace')
 logger_spi = logging.getLogger('mfrc522.spi')
 
@@ -669,7 +669,7 @@ class Uid(object):
             try:
                 picc_type = PICC_Type(tmp_sak)
             except ValueError:
-                logger_debug.error(
+                logger_mfrc.error(
                     _F('Unkown SAK value [{}], cannot identify PICC type, returning UNKNOWN', format_hex([tmp_sak])))
 
         return picc_type
@@ -714,7 +714,6 @@ class MFRC522(object):
         '''
         self.__log_trace = logger_trace.isEnabledFor(logging.DEBUG)
         self.__log_spi = logger_spi.isEnabledFor(logging.DEBUG)
-        self.__log_debug = logger_debug.isEnabledFor(logging.DEBUG)
 
         self.bus = bus
         self.device = device
@@ -810,8 +809,7 @@ class MFRC522(object):
         @return: The byte value read from the register
         '''
         if count <= 0:
-            if self.__log_debug:
-                logger_debug.warn('read_register called with count <= 0')
+            logger_mfrc.warn('read_register called with count <= 0')
             return []
 
         # MSB == 1 is for reading. LSB is not used in address. Datasheet
@@ -924,9 +922,8 @@ class MFRC522(object):
                 return StatusCode.STATUS_OK, result
 
         # Timeout: Communication with the MFRC522 might be down.
-        if self.__log_debug:
-            logger_debug.warn(
-                'Timeout during CRC_A calculation. Communication with the MFRC522 might be down')
+        logger_mfrc.warn(
+            'Timeout during CRC_A calculation. Communication with the MFRC522 might be down')
         return StatusCode.STATUS_TIMEOUT, None
 
     # =========================================================================
@@ -941,18 +938,16 @@ class MFRC522(object):
             logger_trace.debug('>> pcd_init')
 
         # Setup SPI
-        if self.__log_debug:
-            logger_debug.info(
-                _F('Init spidev with bus={bus}, device={device}, speed={speed}',
-                   bus=self.bus, device=self.device, speed=self.speed))
+        logger_mfrc.info(
+            _F('Init spidev with bus={bus}, device={device}, speed={speed}',
+                bus=self.bus, device=self.device, speed=self.speed))
 
         self.spi.open(self.bus, self.device)
         self.spi.max_speed_hz = self.speed
 
         # Setup GPIO
-        if self.__log_debug:
-            logger_debug.info(_F('Init GPIO with mode={mode}, pin_reset={pin_reset}, pin_ce={pin_ce}, pin_irq={pin_irq}',
-                                 mode=self.pin_mode, pin_reset=self.pin_reset, pin_ce=self.pin_ce, pin_irq=self.pin_irq))
+        logger_mfrc.info(_F('Init GPIO with mode={mode}, pin_reset={pin_reset}, pin_ce={pin_ce}, pin_irq={pin_irq}',
+                            mode=self.pin_mode, pin_reset=self.pin_reset, pin_ce=self.pin_ce, pin_irq=self.pin_irq))
         GPIO.setmode(self.pin_mode)
         if self.pin_irq != 0:
             GPIO.setup(self.pin_irq, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -970,9 +965,8 @@ class MFRC522(object):
             GPIO.setup(self.pin_reset, GPIO.IN)
             # The MFRC522 chip is in power down mode.
             if GPIO.input(self.pin_reset) == GPIO.LOW:
-                if self.__log_debug:
-                    logger_debug.debug(
-                        'MFRC522 is in power down mode. Trigger a hard reset')
+                logger_mfrc.debug(
+                    'MFRC522 is in power down mode. Trigger a hard reset')
                 # Now set the resetPowerDownPin as digital output.
                 GPIO.setup(self.pin_reset, GPIO.OUT)
                 # Make shure we have a clean LOW state.
@@ -989,9 +983,8 @@ class MFRC522(object):
                 hard_reset = True
 
         if not hard_reset:      # Perform a soft reset if we haven't triggered a hard reset above.
-            if self.__log_debug:
-                logger_debug.debug(
-                    'MFRC522 is not in power down mode. Perform a soft reset')
+            logger_mfrc.debug(
+                'MFRC522 is not in power down mode. Perform a soft reset')
             self.pcd_reset()
 
         # Reset baud rates
@@ -1178,7 +1171,7 @@ class MFRC522(object):
         firmware = self.pcd_get_firmware_version()
         if firmware == PCD_Firmware.UNKNOWN:
             # abort test
-            logger_debug.error(
+            logger_mfrc.error(
                 'Unknown firmware version, cannot run self test')
             return False
 
@@ -1186,7 +1179,7 @@ class MFRC522(object):
         reference = firmware.reference_data
         if not reference:
             # abort test
-            logger_debug.error(
+            logger_mfrc.error(
                 'No reference data for firmware available')
             return False
 
@@ -1325,10 +1318,9 @@ class MFRC522(object):
         # Timout (on Ardunion 35.7ms) and nothing happend. Communication with
         # the MFRC522 might be down.
         if i == 0:
-            if self.__log_debug:
-                logger_debug.warn(
-                    _F('Timeout during communication with PICC (Command={}). Communication with the MFRC522 might be down',
-                       command.name))
+            logger_mfrc.warn(
+                _F('Timeout during communication with PICC (Command={}). Communication with the MFRC522 might be down',
+                    command.name))
             return StatusCode.STATUS_TIMEOUT, None, None
 
         # Stop now if any errors except collisions were detected.
@@ -1336,10 +1328,9 @@ class MFRC522(object):
         # CRCErr ParityErr ProtocolErr
         error_reg_value = self.pcd_read_register(PCD_Register.ErrorReg)
         if error_reg_value & 0x13:                                              # BufferOvfl ParityErr ProtocolErr
-            if self.__log_debug:
-                logger_debug.warn(
-                    _F('Error detected during communication with PICC (Command={}). Error register value: {:#04x}',
-                       command.name, error_reg_value))
+            logger_mfrc.warn(
+                _F('Error detected during communication with PICC (Command={}). Error register value: {:#04x}',
+                    command.name, error_reg_value))
             return StatusCode.STATUS_ERROR, None, None
 
         rx_valid_bits = 0
@@ -1364,10 +1355,9 @@ class MFRC522(object):
 
         # Tell about collisions
         if error_reg_value & 0x08:        # CollErr
-            if self.__log_debug:
-                logger_debug.debug(
-                    _F('Collision detected during communication with PICC (Command={}). Error register value: {:#04x}',
-                       command.name, error_reg_value))
+            logger_mfrc.debug(
+                _F('Collision detected during communication with PICC (Command={}). Error register value: {:#04x}',
+                    command.name, error_reg_value))
             return StatusCode.STATUS_COLLISION, rx_back_data, rx_valid_bits
 
         # Perform CRC_A validation if requested.
@@ -1377,17 +1367,15 @@ class MFRC522(object):
                     '>> pcd_communicate_with_pic: CRC_A validation for back data')
             # In this case a MIFARE Classic NAK is not OK.
             if rx_back_data_len == 1 and rx_valid_bits == 4:
-                if self.__log_debug:
-                    logger_debug.warn(
-                        _F('Communication with PICC resulted in MIFARE Classic NAK (Command={})', command.name))
+                logger_mfrc.warn(
+                    _F('Communication with PICC resulted in MIFARE Classic NAK (Command={})', command.name))
                 return StatusCode.STATUS_MIFARE_NACK, rx_back_data, rx_valid_bits
             # We need at least the CRC_A value and all 8 bits of the last byte
             # must be received.
             if rx_back_data_len < 2 or rx_valid_bits != 0:
-                if self.__log_debug:
-                    logger_debug.warn(
-                        _F('Not enough bits for CRC_A calculation received from communication with PICC (Command={})',
-                           command.name))
+                logger_mfrc.warn(
+                    _F('Not enough bits for CRC_A calculation received from communication with PICC (Command={})',
+                        command.name))
                 return StatusCode.STATUS_CRC_WRONG, rx_back_data, rx_valid_bits
             # Verify CRC_A - do our own calculation and store the control in
             # controlBuffer.
@@ -1397,12 +1385,11 @@ class MFRC522(object):
                 return status, rx_back_data, rx_valid_bits
             if ((rx_back_data[rx_back_data_len - 2] != control_buffer[0]) or
                     (rx_back_data[rx_back_data_len - 1] != control_buffer[1])):
-                if self.__log_debug:
-                    logger_debug.warn(
-                        _F('Wrong CRC_A value received from communication with PICC (Command: {},'
-                           ' expected: [ {:#04x} {:#04x} ], actual: [ {:#04x} {:#04x} ])',
-                           command.name, rx_back_data[rx_back_data_len - 2], rx_back_data[rx_back_data_len - 1],
-                           control_buffer[0], control_buffer[1]))
+                logger_mfrc.warn(
+                    _F('Wrong CRC_A value received from communication with PICC (Command: {},'
+                        ' expected: [ {:#04x} {:#04x} ], actual: [ {:#04x} {:#04x} ])',
+                        command.name, rx_back_data[rx_back_data_len - 2], rx_back_data[rx_back_data_len - 1],
+                        control_buffer[0], control_buffer[1]))
                 return StatusCode.STATUS_CRC_WRONG, None, None
 
         return StatusCode.STATUS_OK, rx_back_data, rx_valid_bits
@@ -1534,9 +1521,8 @@ class MFRC522(object):
 
         # Sanity checks
         if rx_valid_bits > 80:
-            if self.__log_debug:
-                logger_debug.error(
-                    _F('Invalid valid_bits for picc_select. rx_valid_bits: {}', rx_valid_bits))
+            logger_mfrc.error(
+                _F('Invalid valid_bits for picc_select. rx_valid_bits: {}', rx_valid_bits))
             return StatusCode.STATUS_INVALID, _uid
 
         # Prepare MFRC522
@@ -1566,9 +1552,8 @@ class MFRC522(object):
                 # Never used in CL3.
                 use_cascade_tag = False
             else:
-                if self.__log_debug:
-                    logger_debug.error(
-                        _F('Error occured in picc_select. Wrong cascade level. cascade: {}', cascade_level))
+                logger_mfrc.error(
+                    _F('Error occured in picc_select. Wrong cascade level. cascade: {}', cascade_level))
                 return StatusCode.STATUS_INTERNAL_ERROR, _uid
 
             # How many UID bits are known in this Cascade Level?
@@ -1622,10 +1607,9 @@ class MFRC522(object):
                     # PCD_CalculateCRC(_buffer, 7, &_buffer[7]);
                     status, crc_result = self.pcd_calulate_crc(_buffer[:7])
                     if status != StatusCode.STATUS_OK:
-                        if self.__log_debug:
-                            logger_debug.error(
-                                _F('Error occured in picc_select anti collision loop. Calculation of CRC_A not OK: {}',
-                                   status.name))
+                        logger_mfrc.error(
+                            _F('Error occured in picc_select anti collision loop. Calculation of CRC_A not OK: {}',
+                                status.name))
                         return status, _uid
                     _buffer[7] = crc_result[0]
                     _buffer[8] = crc_result[1]
@@ -1674,11 +1658,10 @@ class MFRC522(object):
                     for i in range(len(_rx_back_data)):
                         _buffer[response_buffer_index + i] = _rx_back_data[i]
                 else:
-                    if self.__log_debug:
-                        logger_debug.warn(
-                            _F('No back data received from transceive_data in picc_select anti collision loop.'
-                               ' buffer: [{}], used: {}, tx_last_bits: {}, rx_align: {}',
-                               format_hex(_buffer), buffer_used, tx_last_bits, rx_align))
+                    logger_mfrc.warn(
+                        _F('No back data received from transceive_data in picc_select anti collision loop.'
+                            ' buffer: [{}], used: {}, tx_last_bits: {}, rx_align: {}',
+                            format_hex(_buffer), buffer_used, tx_last_bits, rx_align))
 
                 # More than one PICC in the field => collision.
                 if status == StatusCode.STATUS_COLLISION:
@@ -1691,9 +1674,8 @@ class MFRC522(object):
                     value_of_col_reg = self.pcd_read_register(
                         PCD_Register.CollReg)
                     if value_of_col_reg & 0x20:                                             # CollPosNotValid
-                        if self.__log_debug:
-                            logger_debug.error(
-                                'Error occured in picc_select anti collision loop. Invalid collision position')
+                        logger_mfrc.error(
+                            'Error occured in picc_select anti collision loop. Invalid collision position')
                         # Without a valid collision position we cannot continue
                         return StatusCode.STATUS_COLLISION, _uid
                     # Values 0-31, 0 means bit 32.
@@ -1701,11 +1683,10 @@ class MFRC522(object):
                     if collision_pos == 0:
                         collision_pos = 32
                     if collision_pos <= current_level_known_bits:                          # No progress - should not happen
-                        if self.__log_debug:
-                            logger_debug.error(
-                                _F('Error occured in picc_select anti collision loop.'
-                                   ' No progress collision_pos ({}) < current_level_known_bits ({})',
-                                   collision_pos, current_level_known_bits))
+                        logger_mfrc.error(
+                            _F('Error occured in picc_select anti collision loop.'
+                                ' No progress collision_pos ({}) < current_level_known_bits ({})',
+                                collision_pos, current_level_known_bits))
                         return StatusCode.STATUS_INTERNAL_ERROR, _uid
                     # Choose the PICC with the bit set.
                     current_level_known_bits = collision_pos
@@ -1717,10 +1698,9 @@ class MFRC522(object):
                         (1 if count else 0)
                     _buffer[index] |= (1 << check_bit)
                 elif status != StatusCode.STATUS_OK:
-                    if self.__log_debug:
-                        logger_debug.error(
-                            _F('Error occured in picc_select anti collision loop. pcd_transceive_data returned NOT OK ({})',
-                               status.name))
+                    logger_mfrc.error(
+                        _F('Error occured in picc_select anti collision loop. pcd_transceive_data returned NOT OK ({})',
+                            status.name))
                     return status, _uid
                 else:                                                                       # STATUS_OK
                     if self.__log_trace:
@@ -1756,27 +1736,24 @@ class MFRC522(object):
             # Check response SAK (Select Acknowledge)
             # SAK must be exactly 24 bits (1 byte + CRC_A).
             if response_length != 3 or tx_last_bits != 0:
-                if self.__log_debug:
-                    logger_debug.error(
-                        _F('Error occured in picc_select cascade loop. Response SAK (Select Acknowledge)'
-                           ' is not exactly 24 bits (SAK bits: {}, SAK valid last bits: {})',
-                           response_length * 8, tx_last_bits))
+                logger_mfrc.error(
+                    _F('Error occured in picc_select cascade loop. Response SAK (Select Acknowledge)'
+                        ' is not exactly 24 bits (SAK bits: {}, SAK valid last bits: {})',
+                        response_length * 8, tx_last_bits))
                 return StatusCode.STATUS_ERROR, _uid
             # Verify CRC_A - do our own calculation and store the control in
             # _buffer[2..3] - those bytes are not needed anymore.
             status, crc_result = self.pcd_calulate_crc(
                 _rx_back_data[:1])  # responseBuffer, 1, &_buffer[2]);
             if status != StatusCode.STATUS_OK:
-                if self.__log_debug:
-                    logger_debug.error(
-                        _F('Error occured in picc_select cascade loop. CRC_A calculation returned NOT OK ({})', status.name))
+                logger_mfrc.error(
+                    _F('Error occured in picc_select cascade loop. CRC_A calculation returned NOT OK ({})', status.name))
                 return status, _uid
             _buffer[2] = crc_result[0]
             _buffer[3] = crc_result[1]
             if ((_buffer[2] != _buffer[response_buffer_index + 1]) or (_buffer[3] != _buffer[response_buffer_index + 2])):
-                if self.__log_debug:
-                    logger_debug.error(
-                        'Error occured in picc_select cascade loop. Wrong CRC_A')
+                logger_mfrc.error(
+                    'Error occured in picc_select cascade loop. Wrong CRC_A')
                 return StatusCode.STATUS_CRC_WRONG, _uid
             # Cascade bit set - UID not complete yes
             if (_buffer[response_buffer_index] & 0x04):
@@ -1942,9 +1919,8 @@ class MFRC522(object):
 
         # Sanity check
         if not data or len(data) < 16:
-            if self.__log_debug:
-                logger_debug.error(_F('Invalid number of bytes (< 16) for mifare_write. Data (n={}): [{}]', len(
-                    data), format_hex(data)))
+            logger_mfrc.error(_F('Invalid number of bytes (< 16) for mifare_write. Data (n={}): [{}]', len(
+                data), format_hex(data)))
             return StatusCode.STATUS_INVALID
 
         # Mifare Classic protocol requires two communications to perform a write.
@@ -2196,14 +2172,12 @@ class MFRC522(object):
             return result
         # The PICC must reply with a 4 bit ACK
         if len(rx_back_data) != 1 or rx_valid_bits != 4:
-            if self.__log_debug:
-                logger_debug.error(
-                    'Invalid ACK received from PICC in mifare transceive')
+            logger_mfrc.error(
+                'Invalid ACK received from PICC in mifare transceive')
             return StatusCode.STATUS_ERROR
         if rx_back_data[0] != MIFARE_Misc.MF_ACK.value:
-            if self.__log_debug:
-                logger_debug.warn(
-                    'Received NAK from PICC in mifare transceive')
+            logger_mfrc.warn(
+                'Received NAK from PICC in mifare transceive')
             return StatusCode.STATUS_MIFARE_NACK
         return StatusCode.STATUS_OK
 
@@ -2242,13 +2216,13 @@ class MFRC522(object):
         v = self.pcd_read_register(PCD_Register.VersionReg)
         # When 0x00 or 0xFF is returned, communication probably failed
         if (v == 0x00) or (v == 0xFF):
-            logger_debug.error(
+            logger_mfrc.error(
                 _F('Firmware version value [{}], communication with PCD probably failed', format_hex([v])))
 
         try:
             firmware = PCD_Firmware(v)
         except ValueError:
-            logger_debug.error(
+            logger_mfrc.error(
                 _F('Unknown firmware version value [{}], returning UNKNOWN', format_hex([v])))
             firmware = PCD_Firmware.UNKNOWN
         return firmware

@@ -3,6 +3,7 @@ import cmd2
 import RPi.GPIO as GPIO
 from .simple_mfrc522 import SimpleMFRC522
 from cmd2 import style, fg
+import logging
 
 
 class MFRC522_Cli(cmd2.Cmd):
@@ -48,7 +49,18 @@ class MFRC522_Cli(cmd2.Cmd):
         pass
 
 
+def setupLogger(name, log_level):
+    logger = logging.getLogger(name)
+    logger.setLevel(log_level)
+    ch = logging.StreamHandler()
+    ch.setLevel(log_level)
+    formatter = logging.Formatter('%(asctime)s %(levelname)8s [%(name)s] %(message)s')
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+
 def main():
+
     arg_parser = argparse.ArgumentParser()
     arg_parser.add_argument('-b', '--bus', type=int, help='The SPI bus (default = 0)', default=0)
     arg_parser.add_argument('-d', '--device', type=int, help='The SPI device (default = 0)', default=0)
@@ -60,11 +72,20 @@ def main():
     arg_parser.add_argument('-i', '--pin_irq', type=int, help='The GPIO IRQ pin number (default = 24)', default=24)
     arg_parser.add_argument('-m', '--pin_mode', type=int,
                             help='GPIO pin numbering mode (default = GPIO.BCM)', default=GPIO.BCM)
+    arg_parser.add_argument('--log_level',
+                            help='Log level (ERROR, WARNING, INFO, DEBUG)', default='INFO')
+    arg_parser.add_argument('--log_spi', type=bool,
+                            help='Enable or disable SPI logging (requires --log_level=DEBUG)', default=False)
     arg_parser.add_argument('command', nargs='?',
                             help='optional command to run, if no command given, enter an interactive shell')
     arg_parser.add_argument('command_args', nargs=argparse.REMAINDER,
                             help='optional arguments for command')
     args = arg_parser.parse_args()
+
+    setupLogger('mfrc522.log', args.log_level)
+    setupLogger('mfrc522.trace', args.log_level)
+    if args.log_spi:
+        setupLogger('mfrc522.spi', args.log_level)
 
     try:
         rfid = SimpleMFRC522(bus=args.bus, device=args.device, speed=args.speed, pin_reset=args.pin_reset,

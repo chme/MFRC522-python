@@ -17,7 +17,10 @@ class MFRC522_Cli(cmd2.Cmd):
 █░▀░█ █▀▀ █▄▄▀ █░░ ▀▀▄ ░▄▀ ░▄▀
 ▀░░░▀ ▀░░ ▀░▀▀ ▀▀▀ ▄▄▀ █▄▄ █▄▄
 
-''', fg=fg.blue)
+''', fg=fg.blue) + style('''
+Enter command(s), to see a list of available commands enter "help -v", to exit enter "quit":
+
+''', fg=fg.white)
 
         self.prompt = style('➜ ', fg=fg.green, bold=True)
         self.rfid = rfid
